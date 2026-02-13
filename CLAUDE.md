@@ -121,12 +121,14 @@ srw-------  ruichen.zhao_ibm.com@champlaincanal-nat.watson.ibm.com:22
 
 ## DTC Simulation Documentation
 
-- **Quantum simulation concepts**: `~/repos/QUANTUM_SIMULATION_CONCEPTS.md` or `landsman2:~/repos/QUANTUM_SIMULATION_CONCEPTS.md` - **START HERE** for refreshing memory on operators, eigenstates, Hamiltonians, basis transformations, and the spectroscopy simulation workflow
-- **Spectroscopy prediction workflow**: `landsman2:~/repos/dtc_spectroscopy_prediction/TECHNICAL_DETAILS.md` - Detailed code walkthrough for M = V†QV transformation
-- **Coupling matrix visualization**: `landsman2:~/repos/coupling_matrix_viz/TECHNICAL_DETAILS.md` - Comparison of H_c vs Q_qubit vs Q_resonator operators
-- **State labeling & energy indexing**: `~/.claude/docs/dtc_simulation_notes.md` - Important notes on how `rockbottom` labels DTC states (energy-ordered index vs physical photon count)
-- **Dispersive coupler implementation plan**: `~/.claude/docs/dispersive_coupler_implementation_plan.md` - Detailed plan for implementing χ calculation with both-branch tracking at avoided crossings
-- **Rockbottom gotchas**: `landsman2:~/repos/dispersive_shift_calculator/rockbottom_gotchas.md` - **CRITICAL**: `state_labels_ordered` is NOT the wavefunction composition! Must use eigenvectors to get actual state composition for hybridized states.
+- **Quantum simulation concepts**: `~/.claude/docs/concepts/quantum_simulation_concepts.md` - **START HERE** for refreshing memory on operators, eigenstates, Hamiltonians, basis transformations, and the spectroscopy simulation workflow
+- **Spectroscopy prediction workflow**: `~/.claude/docs/simulation_tools/spectroscopy_prediction_workflow.md` - Detailed code walkthrough for M = V†QV transformation
+- **Coupling matrix visualization**: `~/.claude/docs/simulation_tools/coupling_transition_matrix_viz.md` - Comparison of H_c vs Q_qubit vs Q_resonator operators
+- **State labeling & energy indexing**: `~/.claude/docs/concepts/dtc_state_labeling.md` - Important notes on how `rockbottom` labels DTC states (energy-ordered index vs physical photon count)
+- **Dispersive coupler implementation plan**: `~/.claude/docs/implementation_plans/dispersive_coupler_plan.md` - Detailed plan for implementing χ calculation with both-branch tracking at avoided crossings
+- **Rockbottom gotchas**: `~/.claude/docs/concepts/rockbottom_gotchas.md` - **CRITICAL**: `state_labels_ordered` is NOT the wavefunction composition! Must use eigenvectors to get actual state composition for hybridized states.
+- **Benchmark results**: `~/.claude/docs/benchmarks/parallel_simulation_benchmarks.md`
+- **Chi sweep debugging**: `~/.claude/docs/debugging_notes/chi_sweep_debugging.md`
 
 ## DTC Simulation Default Parameters (Big Endeavour)
 
