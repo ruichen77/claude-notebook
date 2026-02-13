@@ -1,5 +1,7 @@
 # DTC Simulation Notes: Understanding State Labeling
 
+> **See also:** [[Quantum Simulation Concepts]], [[Rockbottom Gotchas]], [[Dispersive Coupler Implementation Plan]]
+
 ## Summary
 
 When using the `rockbottom` simulator for Q-DTC-Q systems, there is an important distinction between **physical photon counting** and **energy-ordered state indexing** for the Double Transmon Coupler (DTC).

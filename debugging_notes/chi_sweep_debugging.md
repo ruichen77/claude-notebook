@@ -1,5 +1,7 @@
 # Chi Sweep Simulation - Debugging Notes
 
+> **See also:** [[Dispersive Coupler Implementation Plan]], [[Parallel Simulation Benchmarks]], [[DTC State Labeling]]
+
 ## Summary
 
 We attempted to create a two-panel chi vs flux plot for the Q0-DTC-Q1 system with:

@@ -1,5 +1,7 @@
 # Dispersive Shift Calculation for DTC Coupler States
 
+> **See also:** [[DTC State Labeling]], [[Rockbottom Gotchas]], [[Quantum Simulation Concepts]], [[Chi Sweep Debugging Notes]], [[Parallel Simulation Benchmarks]]
+
 ## Implementation Plan for `dispersive_coupler.py`
 
 **Purpose:** Calculate qubit frequency shift (χ) due to DTC coupler excitation to higher photon manifolds (states 3, 4, 5, etc.)
