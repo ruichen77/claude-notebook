@@ -21,11 +21,14 @@ against EnhancedSmarterThanARock).
 
 ## What Needs To Be Done
 
-### Step 1: Layer 0 — CZ Pulse Design  [CURRENT]
+### Step 1: Layer 0 — CZ Pulse Design  [IN PROGRESS]
 Find a working (amplitude, T_gate) operating point using adiabatic phase integral.
-- Add trapezoid pulse (flat-top with cosine rise/fall) to pulse.py
-- Sweep (amplitude, T_gate) space, find theta_CZ = pi contour
-- Select operating point, validate with Layer 1
+- ✅ Add trapezoid pulse (flat-top with cosine rise/fall) to pulse.py
+- ✅ Manual sweep: fix gate time, tune phi_interaction for π phase (`examples/manual_cz_sweep.py`)
+- ✅ Systematic 2D sweep: 40 gate times × 50 phi values, π-contour extraction, Layer 1 at 5 points (`examples/systematic_cz_2d.py`)
+  - Constraint: max |ZZ| ≤ 10 MHz at phi_interaction
+  - Gate times: 150–1000 ns (log-spaced, denser at short end)
+  - 6 diagnostic plots: spectrum+ZZ, phase heatmap, π-contour, fidelity/leakage, populations, pulses
 
 ### Step 2: Layer 1 — Coherent Baseline
 Run unitary evolution at the operating point.
@@ -108,8 +111,28 @@ job arrays pay off vs. landsman2's single-node 28 cores. See
 - Couplings: Q0-DT1=0.18, Q1-DT1=0.18, DT1_internal=0.01
 - Hilbert space: 6 x 12 x 6 = 432 dim
 
+## CZ Gate Design Workflow
+
+**Always: fix gate time first, then tune pulse amplitude for π phase.**
+
+1. Choose gate time (e.g. 100, 200, 300 ns)
+2. Sweep phi_interaction to find the value that gives exactly -π conditional phase (adiabatic)
+3. Run full unitary simulation at that operating point
+4. Evaluate fidelity, leakage, population dynamics
+
+Shorter gates need deeper pulses (closer to/through anticrossing, higher ZZ) to accumulate π in less time. This trades leakage for speed.
+
+**Pulse shapes**: Only use **trapezoid** (cosine rise/fall ramps) and **square**. Cosine and Slepian pulses are too slow (smooth everywhere, waste time at low ZZ). Trapezoid has a flat top at peak ZZ, maximizing phase accumulation per unit time.
+
+**Scripts**:
+- `examples/manual_cz_sweep.py` — manual: specify gate times, find phi_interaction per gate time
+- `examples/systematic_cz_2d.py` — automated: 2D sweep, π-contour extraction, Layer 1 validation
+
+## Plotting Preferences
+
+- **Always combine energy spectrum + ZZ vs flux** in a stacked plot with shared x-axis (energy on top, ZZ on bottom). Users need both simultaneously to correlate anticrossings with ZZ features.
+- Bold black borders on all plots.
+
 ## Known Issues
-- Safe-region ZZ is only ~1.5 MHz (max at safe boundary phi=0.2275).
-  This means CZ gate time is ~1 us, making coupler coherence very relevant.
-- ZZ is negative throughout, so target CZ phase is -pi.
-- The anticrossing region (phi=0.09-0.225) must be avoided by the pulse.
+- ZZ is negative throughout, so target CZ phase is -π.
+- Pulsing through the anticrossing (phi < 0.225) causes non-adiabatic leakage but enables much stronger ZZ (~25 MHz at phi=0.11 vs 1.5 MHz at safe boundary).

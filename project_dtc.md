@@ -52,9 +52,34 @@ simDict = {
 - **Roadmap**: `~/.claude/docs/dtc_cz/dtc_cz_sim_roadmap.md`
 - **Energy level plotting design**: `~/.claude/docs/dtc_cz/energy_level_plotting_design.md`
 - **Key scripts**:
-  - `examples/layer0_energy_levels.py` — Energy spectrum + manifold plots (smooth energy-sorted lines, composition hover)
-  - `examples/demo_cz_gate.py` — Layer 0+1 full demo (spectrum, ZZ, adiabatic phase, population dynamics, fidelity vs time)
-  - `examples/layer0_cz_design.py` — 2D (phi, T_gate) sweep for CZ operating point
+  - `examples/systematic_cz_2d.py` — **PRIMARY**: 2D (gate_time × phi_interaction) sweep, π-contour extraction, Layer 1 validation at 5 points
+  - `examples/manual_cz_sweep.py` — Fix gate time, tune amplitude for π phase (trapezoid pulse, through anticrossing)
+  - `examples/rotating_frame_demo.py` — Rotating frame comparison (5 validation plots)
+  - `examples/layer0_energy_levels.py` — Energy spectrum + manifold plots (50 states)
+  - `examples/demo_cz_gate.py` — Layer 0+1 full demo (safe-region only, for reference)
+
+### CZ Gate Design Workflow
+- **Always fix gate time first**, then tune phi_interaction (pulse amplitude) to hit π phase
+- **Pulse shapes**: Only trapezoid and square. Cosine/Slepian are too slow.
+- **Max excursion**: phi_interaction can go to ~0.11 (through anticrossing, ZZ ~ -25 MHz)
+
+### Systematic 2D Sweep (`examples/systematic_cz_2d.py`)
+Automated exploration of the full (gate_time, phi_interaction) parameter space:
+1. **Pre-compute** ZZ and energy spectrum vs flux (1001 points, 50 states)
+2. **Constraint**: max |ZZ| at phi_interaction ≤ 10 MHz (finds the phi boundary)
+3. **2D adiabatic sweep**: 40 log-spaced gate times (150–1000 ns) × 50 phi_interaction values → conditional phase map
+4. **π-contour extraction**: for each gate time, brentq finds the phi_interaction giving exactly −π phase
+5. **Layer 1 validation**: selects 5 evenly-spaced points along the π-contour, runs full 432-dim unitary simulation (compute_gate_unitary + population_dynamics for |11⟩)
+6. **Outputs** (6 Plotly HTML plots):
+   - `sys2d_spectrum_zz.html` — energy spectrum + ZZ (shared x-axis), selected operating points marked
+   - `sys2d_phase_map.html` — 2D heatmap of conditional phase / π, π-contour overlay, log-scale gate time axis
+   - `sys2d_pi_contour.html` — π-contour: gate time vs phi and vs |ZZ|, with selected points
+   - `sys2d_fidelity_leakage.html` — gate error (1−F) and avg leakage at the 5 selected points
+   - `sys2d_populations.html` — population dynamics (|11⟩ input) at each selected point
+   - `sys2d_pulses.html` — trapezoid pulse shapes for all 5 selected points overlaid
+
+### Plotting Preferences
+- **Always combine energy spectrum + ZZ** in a shared-x-axis stacked plot (energy top, ZZ bottom)
 
 ### Energy Level Plotting Gotchas
 - **Kinks at avoided crossings**: Never label states per-flux-point via `edict`/`find_state_by_occupation`. Plot by energy-sorted index for smooth lines; use hover for state identification.
