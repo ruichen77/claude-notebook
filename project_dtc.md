@@ -48,7 +48,7 @@ simDict = {
 ## CZ Gate Simulation (dtc_cz_sim)
 
 - **Repo**: `landsman2:/home/US8J4928/repos/dtc_cz_sim/`
-- **Results**: `landsman2:.../dtc_cz_sim/results/` → copy locally to `~/projects/dtc/sim_outputs/dtc_cz_sim_results/`
+- **Results**: `landsman2:.../dtc_cz_sim/results/` → copy locally to `~/projects/dtc/sim_outputs/dtc_cz_sim_results/` (see Result Organization below)
 - **Roadmap**: `~/.claude/docs/dtc_cz/dtc_cz_sim_roadmap.md`
 - **Energy level plotting design**: `~/.claude/docs/dtc_cz/energy_level_plotting_design.md`
 - **Key scripts**:
@@ -61,6 +61,26 @@ simDict = {
 - **Manifold classification**: Use energy range at sweet spot, NOT digit sum (e.g., `|0,2,0>` has digit sum 2 but is a single DTC excitation in the low band).
 - **Sweet spot coloring (phi=0.5)**: States are >97% pure at DTC sweet spot vs ~94% at idle. Always use phi=0.5 as reference for color/name assignment.
 - **scp glob quoting**: `scp "landsman2:path/*" dest/` — must quote to prevent local zsh glob expansion.
+
+## Result Organization
+
+**Local results** live in `~/projects/dtc/sim_outputs/dtc_cz_sim_results/`, organized into timestamped folders per run:
+
+```
+dtc_cz_sim_results/
+├── 20250213_2038_layer0_energy_spectrum/
+├── 20250213_2138_demo_cz_gate_layer1/
+└── 20250213_2246_fixed_time_cz_comparison/
+```
+
+**Naming convention**: `YYYYMMDD_HHMM_<short_summary>/`
+- Timestamp = when the sim started on landsman2
+- Summary = script name or brief description of what was run
+
+**Workflow**:
+1. Sims run on landsman2, outputs land in `landsman2:.../dtc_cz_sim/results/` (flat, gitignored)
+2. After a run, `scp` results locally into a new timestamped folder
+3. Remote `results/` stays flat (scratch space); local copy is the organized archive
 
 ## Compute
 
