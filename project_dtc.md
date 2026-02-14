@@ -25,6 +25,7 @@ Start with `concepts/quantum_simulation_concepts.md` for refresher.
 - `debugging_notes/chi_sweep_debugging.md`
 - `dtc_cz/dtc_cz_sim_readme.md` - CZ gate simulation
 - `dtc_cz/dtc_cz_sim_roadmap.md`
+- `dtc_cz/cz_pulse_design_intuition.md` - **KEY**: Avoided crossing strategies (adiabatic vs diabatic), leakage/seepage taxonomy, pulse shape tradeoffs
 
 ## Default Parameters (Big Endeavour Q-DTC-Q)
 
