@@ -201,6 +201,25 @@ Results in: `time.strftime(%H:%M:%S)` — quotes lost!
 3. **Avoid f-strings with quotes** in heredoc-created files; use `.format()` or concatenation
 4. **Write locally first**, then scp to remote
 
+### Session Management
+
+- **Sessions are disposable, CLAUDE.md is permanent** - don't rely on finding old sessions
+- After a productive session, Claude should offer to document key outcomes in `~/.claude/docs/` and push to git
+- Any new session picks up full context from CLAUDE.md automatically
+- For task-specific long-running work, use CLI with named sessions:
+  ```bash
+  claude --resume "dtc-sim"      # DTC simulation work
+  claude --resume "noise-meas"   # TWPA noise measurements
+  claude --resume "infra"        # Server/setup tasks
+  ```
+
+### Documentation & Backup
+
+- All knowledge docs live in `~/.claude/docs/` (git-tracked)
+- Remote: `git@github.ibm.com:Ruichen-Zhao/claude_notebook.git`
+- `~/repos/CLAUDE.md` is a symlink to `~/.claude/docs/CLAUDE.md`
+- Claude should commit and push after creating/updating docs
+
 ---
 
 ## Plot Styling Guidelines
