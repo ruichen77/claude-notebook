@@ -73,6 +73,12 @@ Extend lindblad_sim.py with:
 - Full error budget at each sweep point (run all 5 configs)
 - Parallelized with multiprocessing (each point is independent)
 
+**MIGRATE TO CCC HERE** — Steps 1-4 run fine on landsman2 (single-point or small
+sweeps). Step 5 introduces large parallel grids (e.g. 50x50 T1xT2 with 5 configs
+each = 12,500 independent Lindblad solves). This is where CCC's multi-node LSF
+job arrays pay off vs. landsman2's single-node 28 cores. See
+`~/.claude/docs/dtc_cz/ccc_migration_plan.md` for setup details.
+
 ### Step 6: Diagnostic Plots
 1. Energy spectrum vs flux (with pulse excursion marked)
 2. ZZ vs flux
