@@ -45,6 +45,23 @@ simDict = {
 }
 ```
 
+## CZ Gate Simulation (dtc_cz_sim)
+
+- **Repo**: `landsman2:/home/US8J4928/repos/dtc_cz_sim/`
+- **Results**: `landsman2:.../dtc_cz_sim/results/` → copy locally to `~/projects/dtc/sim_outputs/dtc_cz_sim_results/`
+- **Roadmap**: `~/.claude/docs/dtc_cz/dtc_cz_sim_roadmap.md`
+- **Energy level plotting design**: `~/.claude/docs/dtc_cz/energy_level_plotting_design.md`
+- **Key scripts**:
+  - `examples/layer0_energy_levels.py` — Energy spectrum + manifold plots (smooth energy-sorted lines, composition hover)
+  - `examples/demo_cz_gate.py` — Layer 0+1 full demo (spectrum, ZZ, adiabatic phase, population dynamics, fidelity vs time)
+  - `examples/layer0_cz_design.py` — 2D (phi, T_gate) sweep for CZ operating point
+
+### Energy Level Plotting Gotchas
+- **Kinks at avoided crossings**: Never label states per-flux-point via `edict`/`find_state_by_occupation`. Plot by energy-sorted index for smooth lines; use hover for state identification.
+- **Manifold classification**: Use energy range at sweet spot, NOT digit sum (e.g., `|0,2,0>` has digit sum 2 but is a single DTC excitation in the low band).
+- **Sweet spot coloring (phi=0.5)**: States are >97% pure at DTC sweet spot vs ~94% at idle. Always use phi=0.5 as reference for color/name assignment.
+- **scp glob quoting**: `scp "landsman2:path/*" dest/` — must quote to prevent local zsh glob expansion.
+
 ## Compute
 
 Run simulations on **landsman2** (28 cores, 1TB RAM):
