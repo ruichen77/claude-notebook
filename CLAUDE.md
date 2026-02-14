@@ -73,14 +73,35 @@ simDict = {
 
 ---
 
+## Directory Structure
+
+```
+~/projects/          # Claude Code workspaces - cd here to start sessions
+├── CLAUDE.md        → ~/.claude/docs/CLAUDE.md (global config)
+├── dtc/             # DTC simulation project
+│   ├── CLAUDE.md    → ~/.claude/docs/project_dtc.md
+│   └── sim_outputs/ # simulation results, plots, data
+└── twpa/            # TWPA noise project
+    ├── CLAUDE.md    → ~/.claude/docs/project_twpa.md
+    └── sim_outputs/ # measurement results, plots
+
+~/repos/             # Code repositories only (git repos, pip-installed tools)
+~/.claude/docs/      # All .md docs (git-tracked, backed up on GitHub)
+```
+
+- **Always `cd ~/projects/<project>` before launching `claude`** for project-scoped sessions
+- **Code repos stay in `~/repos/`** - never add CLAUDE.md inside git repos
+- **Project folders hold**: CLAUDE.md (symlink), sim_outputs, scratch files, notebooks
+- **New projects**: create `~/projects/<name>/`, add `project_<name>.md` in docs repo, symlink as CLAUDE.md
+
 ## Workflow
 
 - **Always use `ssh -T`** for remote commands
 - **Use tmux** for simulations >1-2 min: `ssh -T server "tmux new -d -s sim 'cd /path && python script.py > output.log 2>&1'"`
 - **Heredoc gotcha**: quotes inside f-strings get stripped. Use scp or write locally first for complex Python.
 - **Sessions are disposable, CLAUDE.md is permanent**. Document outcomes in `~/.claude/docs/` and push to git.
-- **Docs repo**: `~/.claude/docs/` → `git@github.ibm.com:Ruichen-Zhao/claude_notebook.git`. `~/repos/CLAUDE.md` is a symlink.
-- **Named CLI sessions** for focused work: `claude --resume "dtc-sim"`, `claude --resume "noise-meas"`, etc.
+- **Docs repo**: `~/.claude/docs/` → `git@github.ibm.com:Ruichen-Zhao/claude_notebook.git`
+- **Named CLI sessions** for focused work: `claude --resume "chi-sweep"`, `claude --resume "noise-run"`, etc.
 
 ---
 
