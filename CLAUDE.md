@@ -97,7 +97,8 @@ simDict = {
 ## Workflow
 
 - **Always use `ssh -T`** for remote commands
-- **Use tmux** for simulations >1-2 min: `ssh -T server "tmux new -d -s sim 'cd /path && python script.py > output.log 2>&1'"`
+- **Use tmux** for simulations >1-2 min: `ssh -T server "tmux new -d -s sim 'cd /path && python -u script.py > output.log 2>&1'"`
+- **Always use `python -u`** (unbuffered stdout) when redirecting to log files, so output can be monitored with `tail -f` during long runs
 - **Heredoc gotcha**: quotes inside f-strings get stripped. Use scp or write locally first for complex Python.
 - **Sessions are disposable, CLAUDE.md is permanent**. Document outcomes in `~/.claude/docs/` and push to git.
 - **Docs repo**: `~/.claude/docs/` → `git@github.ibm.com:Ruichen-Zhao/claude_notebook.git`

@@ -154,3 +154,15 @@ psi_in = V_idle[:, comp_idx_i]
 psi_out = U_total @ psi_in
 U_comp[j,i] = V_idle[:, comp_idx_j].conj() @ psi_out
 ```
+
+## Rotating Frame
+
+Lab-frame phases accumulate thousands of radians (GHz × hundreds of ns), burying the CZ conditional phase (~π). The rotating frame removes this fast dynamics via a post-hoc transformation:
+
+```
+U_rot_total = R(T_gate) @ U_lab_total
+```
+
+Two references available: `idle_eig` (recommended — removes all idle eigenvalues) and `bare` (removes uncoupled frequencies). Populations, fidelity, and conditional phase are frame-independent.
+
+See `rotating_frame_guide.md` for full details, proofs, API examples, and the phase tracking gotcha.

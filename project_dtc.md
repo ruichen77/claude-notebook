@@ -53,8 +53,9 @@ simDict = {
 - **Roadmap**: `~/.claude/docs/dtc_cz/dtc_cz_sim_roadmap.md`
 - **Energy level plotting design**: `~/.claude/docs/dtc_cz/energy_level_plotting_design.md`
 - **Key scripts**:
-  - `examples/systematic_cz_2d.py` — **PRIMARY**: 2D (gate_time × phi_interaction) sweep, π-contour extraction, Layer 1 validation at 5 points
-  - `examples/manual_cz_sweep.py` — Fix gate time, tune amplitude for π phase (trapezoid pulse, through anticrossing)
+  - `examples/systematic_cz_2d.py` — **PRIMARY**: 2D (gate_time × phi_interaction) sweep, π-contour extraction, Layer 1 at ALL 40 contour points
+  - `examples/manual_cz_sweep.py` — Fix gate time (100,200,300,1000ns), tune amplitude for π phase
+  - `examples/iswap_diagnostic.py` — Residual iSWAP analysis: g_eff(Φ) from single-excitation manifold, 3×3 SWAP prediction (**written, not yet deployed**)
   - `examples/rotating_frame_demo.py` — Rotating frame comparison (5 validation plots)
   - `examples/layer0_energy_levels.py` — Energy spectrum + manifold plots (50 states)
   - `examples/demo_cz_gate.py` — Layer 0+1 full demo (safe-region only, for reference)
@@ -70,9 +71,11 @@ Automated exploration of the full (gate_time, phi_interaction) parameter space:
 2. **Constraint**: max |ZZ| at phi_interaction ≤ 10 MHz (finds the phi boundary)
 3. **2D adiabatic sweep**: 40 log-spaced gate times (150–1000 ns) × 50 phi_interaction values → conditional phase map
 4. **π-contour extraction**: for each gate time, brentq finds the phi_interaction giving exactly −π phase
-5. **Layer 1 validation**: selects 5 evenly-spaced points along the π-contour, runs full 432-dim unitary simulation (compute_gate_unitary + population_dynamics for |11⟩)
-6. **Outputs** (6 Plotly HTML plots):
-   - `sys2d_spectrum_zz.html` — energy spectrum + ZZ (shared x-axis), selected operating points marked
+5. **Layer 1 at ALL contour points**: runs full 432-dim unitary simulation at all ~40 π-contour points
+6. **Detail diagnostics**: `multi_state_dynamics` at 5 evenly-spaced points for conditional phase buildup + population dynamics
+7. **Data saving**: `sys2d_settings.json` (parameters) + `sys2d_results.npz` (all numerical arrays)
+8. **Outputs** (7 Plotly HTML plots + 2 data files):
+   - `sys2d_spectrum_zz.html` — energy spectrum (comp states highlighted, hover composition) + ZZ, shared x-axis
    - `sys2d_phase_map.html` — 2D heatmap of conditional phase / π, π-contour overlay, log-scale gate time axis
    - `sys2d_pi_contour.html` — π-contour: gate time vs phi and vs |ZZ|, with selected points
    - `sys2d_fidelity_leakage.html` — gate error (1−F) and avg leakage at the 5 selected points
