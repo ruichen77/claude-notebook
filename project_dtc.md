@@ -7,6 +7,7 @@ Double Transmon Coupler simulation, spectroscopy prediction, and dispersive shif
 - **Simulator**: `landsman2:/home/US8J4928/repos/EnhancedSmarterThanARock/` (always use for simulations)
 - **Dispersive shift calculator**: `landsman2:/home/US8J4928/repos/dispersive_shift_calculator/`
 - **Spectroscopy prediction**: local `~/repos/dtc_spectroscopy_prediction/`
+- **qss-pulsegen**: `landsman2:/home/US8J4928/repos/qss-pulsegen/` (IBM pulse shape library, source of Ramen pulse)
 - **Simulation outputs**: `~/repos/sim_outputs/` (spectroscopy, dtc_plots, dtc_cz_sim_results, etc.)
 
 ## Key Docs (in ~/.claude/docs/)
@@ -26,6 +27,7 @@ Start with `concepts/quantum_simulation_concepts.md` for refresher.
 - `dtc_cz/dtc_cz_sim_readme.md` - CZ gate simulation
 - `dtc_cz/dtc_cz_sim_roadmap.md`
 - `dtc_cz/cz_pulse_design_intuition.md` - **KEY**: Avoided crossing strategies (adiabatic vs diabatic), leakage/seepage taxonomy, pulse shape tradeoffs
+- `dtc_cz/qss_pulsegen_pulse_shapes.md` - **Pulse shape reference**: All shapes in qss-pulsegen, Ramen pulse math & physics, mapping to DTC CZ parameters
 
 ## Default Parameters (Big Endeavour Q-DTC-Q)
 
@@ -62,7 +64,7 @@ simDict = {
 
 ### CZ Gate Design Workflow
 - **Always fix gate time first**, then tune phi_interaction (pulse amplitude) to hit π phase
-- **Pulse shapes**: Only trapezoid and square. Cosine/Slepian are too slow.
+- **Pulse shapes**: Trapezoid (current baseline), square, and **Ramen** (crossing-aware, next to simulate). See `dtc_cz/qss_pulsegen_pulse_shapes.md`.
 - **Max excursion**: phi_interaction can go to ~0.11 (through anticrossing, ZZ ~ -25 MHz)
 
 ### Systematic 2D Sweep (`examples/systematic_cz_2d.py`)
