@@ -8,7 +8,15 @@ Double Transmon Coupler simulation, spectroscopy prediction, and dispersive shif
 - **Dispersive shift calculator**: `landsman2:/home/US8J4928/repos/dispersive_shift_calculator/`
 - **Spectroscopy prediction**: local `~/repos/dtc_spectroscopy_prediction/`
 - **qss-pulsegen**: `landsman2:/home/US8J4928/repos/qss-pulsegen/` (IBM pulse shape library, source of Ramen pulse)
+- **duffing_cz (qiskit-dynamics)**: local `~/repos/dtc_cz_sim_qiskit/` → deploy to `landsman3:.../dtc_cz_sim_qiskit/` (qiskit_dyn env). See `dtc_cz/duffing_cz_package.md`.
 - **Simulation outputs**: `~/repos/sim_outputs/` (spectroscopy, dtc_plots, dtc_cz_sim_results, etc.)
+
+### Development Workflow (duffing_cz)
+**Develop locally → deploy to remote for testing.** Never edit directly on remote.
+1. Edit code in `~/repos/dtc_cz_sim_qiskit/`
+2. `scp` changed files to `landsman3:.../dtc_cz_sim_qiskit/`
+3. Run on landsman3 with `conda run -n qiskit_dyn python -u ...`
+4. Commit on landsman3 after successful test
 
 ## Key Docs (in ~/.claude/docs/)
 
@@ -28,6 +36,8 @@ Start with `concepts/quantum_simulation_concepts.md` for refresher.
 - `dtc_cz/dtc_cz_sim_roadmap.md`
 - `dtc_cz/cz_pulse_design_intuition.md` - **KEY**: Avoided crossing strategies (adiabatic vs diabatic), leakage/seepage taxonomy, pulse shape tradeoffs
 - `dtc_cz/qss_pulsegen_pulse_shapes.md` - **Pulse shape reference**: All shapes in qss-pulsegen, Ramen pulse math & physics, mapping to DTC CZ parameters
+- `dtc_cz/pulse_shape_comparison.md` - **CRITICAL**: qss-pulsegen vs dtc_cz_sim pulse comparison. Our "trapezoid" uses COSINE ramps (not linear like hardware). Ramen/square_ramen match.
+- `dtc_cz/duffing_cz_package.md` - **duffing_cz package**: API reference, usage examples, dev workflow
 
 ## Default Parameters (Big Endeavour Q-DTC-Q)
 
@@ -64,8 +74,32 @@ simDict = {
 
 ### CZ Gate Design Workflow
 - **Always fix gate time first**, then tune phi_interaction (pulse amplitude) to hit π phase
-- **Pulse shapes**: Trapezoid (current baseline), square, and **Ramen** (crossing-aware, next to simulate). See `dtc_cz/qss_pulsegen_pulse_shapes.md`.
-- **Max excursion**: phi_interaction can go to ~0.11 (through anticrossing, ZZ ~ -25 MHz)
+- **Pulse shapes**: `trapezoid_pulse` (LINEAR ramps, hw-matching), `cosine_flat_top_pulse` (cosine ramps, best performer), square, and **Ramen** (crossing-aware). See `dtc_cz/pulse_shape_comparison.md` and `dtc_cz/qss_pulsegen_pulse_shapes.md`.
+  - **v3 fix (Feb 18)**: `trapezoid_pulse` corrected to LINEAR ramps matching qss-pulsegen hardware. Old cosine version preserved as `cosine_flat_top_pulse`.
+  - **v2→v3 consistency**: All 8 Ramen configs produce bit-identical results between v2 and v3. Adaptive ODE solver is fully deterministic.
+- **Max excursion**: phi_interaction >= 0.11 (**HARDCODED LIMIT** — see below)
+
+### ⚠️ DANGER ZONE: phi < 0.11 Anticrossing (STATE TRACKER BREAKS)
+The |100⟩↔|020⟩ anticrossing at phi ~ 0.094–0.106 breaks ALL dressed-state tracking in the codebase.
+**ANY function that tracks dressed states through this region will give WRONG results.**
+
+Known affected functions:
+- `sweep_zz()` — ZZ jumps from −20 MHz to +193 MHz (label swap)
+- `extract_ramen_params()` — gives spurious delta/det0 if phi_ref < 0.11 **(BURNED US: phi_ref=0.05 gave delta=207 MHz vs correct 252 MHz, made Full Ramen appear 2x better than it is)**
+- Any future function that calls `find_state_by_occupation()` or similar state tracking across this crossing
+
+**RULE: Never pass phi < 0.11 to any state-tracking function.** This includes:
+- `phi_ref` in `extract_ramen_params()` → use 0.15
+- `phi_min` in ZZ sweeps → use 0.11
+- `phi_interaction` bounds in brentq → use 0.111 as lower bound
+- Any new analysis that sweeps flux → clamp at 0.11
+
+**Workaround**: `phi_min = 0.11` is hardcoded in `spectrum_pulse_overlay.py`. The ZZ interpolator
+uses only clean data at phi >= 0.11, and all pulse trajectories are clamped at this limit.
+- ZZ at phi=0.11: −24.6 MHz (deepest accessible ZZ)
+- Minimum gate times at phi_min: Square 20ns, Trapezoid 34ns, Ramen 75ns
+- **This is a HACK**: the true fix is to recompute ZZ with proper adiabatic state tracking through the anticrossing
+- Affects: `spectrum_pulse_overlay.py`, any script using `sys2d_results.npz` ZZ data below phi=0.11
 
 ### Systematic 2D Sweep (`examples/systematic_cz_2d.py`)
 Automated exploration of the full (gate_time, phi_interaction) parameter space:
@@ -86,6 +120,8 @@ Automated exploration of the full (gate_time, phi_interaction) parameter space:
 
 ### Plotting Preferences
 - **Always combine energy spectrum + ZZ** in a shared-x-axis stacked plot (energy top, ZZ bottom)
+- **Always include spectrum + pulse overlay** for every pulse/gate fidelity study: energy levels vs flux (top, with hover composition) + pulse trajectory phi(t) (bottom, time going downward, shared flux x-axis). Script: `examples/spectrum_pulse_overlay.py`
+- **spectrum_pulse_overlay.py** now sweeps gate times [80, 160, 320, 640 ns] × 3 shapes (Square, Trapezoid, Ramen), auto-finds phi_int for −π via brentq, plots on normalized time. Uses hardcoded phi_min=0.11.
 
 ### Energy Level Plotting Gotchas
 - **Kinks at avoided crossings**: Never label states per-flux-point via `edict`/`find_state_by_occupation`. Plot by energy-sorted index for smooth lines; use hover for state identification.
