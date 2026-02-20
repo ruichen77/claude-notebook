@@ -131,23 +131,33 @@ Automated exploration of the full (gate_time, phi_interaction) parameter space:
 
 ## Result Organization
 
-**Local results** live in `~/projects/dtc/sim_outputs/dtc_cz_sim_results/`, organized into timestamped folders per run:
+### General Rule (ALL simulation scripts)
+Every simulation script **must** save outputs into a timestamped subfolder:
+- **On remote**: `results/YYYYMMDD_HHMM_<script_name>/`
+- **Contents**: `.npz` data files (all numerical arrays) + `.html` Plotly plots + any JSON settings
+- Scripts create the folder via `os.makedirs(out_dir, exist_ok=True)`
+- This keeps results from different runs organized and reproducible
+
+### Local archive
+**Local results** live in `~/projects/dtc/sim_outputs/`, organized by repo:
 
 ```
-dtc_cz_sim_results/
-├── 20250213_2038_layer0_energy_spectrum/
-├── 20250213_2138_demo_cz_gate_layer1/
-└── 20250213_2246_fixed_time_cz_comparison/
+sim_outputs/
+├── dtc_cz_sim_results/           # RockBottom-based CZ sim
+│   ├── 20250213_2038_layer0_energy_spectrum/
+│   └── 20250213_2246_fixed_time_cz_comparison/
+└── dtc_cz_sim_qiskit/            # Duffing/qiskit-dynamics CZ sim
+    └── 20260219_2051_first_duffing_cz_run/
 ```
 
 **Naming convention**: `YYYYMMDD_HHMM_<short_summary>/`
-- Timestamp = when the sim started on landsman2
+- Timestamp = when the sim started on the remote server
 - Summary = script name or brief description of what was run
 
 **Workflow**:
-1. Sims run on landsman2, outputs land in `landsman2:.../dtc_cz_sim/results/` (flat, gitignored)
-2. After a run, `scp` results locally into a new timestamped folder
-3. Remote `results/` stays flat (scratch space); local copy is the organized archive
+1. Sims run on remote server, outputs land in `<repo>/results/YYYYMMDD_HHMM_<name>/`
+2. After a run, `scp` the timestamped folder locally into `~/projects/dtc/sim_outputs/<repo>/`
+3. Remote `results/` is gitignored scratch space; local copy is the organized archive
 
 ## Compute
 

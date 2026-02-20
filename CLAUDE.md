@@ -94,6 +94,27 @@ simDict = {
 - **Project folders hold**: CLAUDE.md (symlink), sim_outputs, scratch files, notebooks
 - **New projects**: create `~/projects/<name>/`, add `project_<name>.md` in docs repo, symlink as CLAUDE.md
 
+## Notion Knowledge Base
+
+**Workspace**: Quantum Engineering Knowledge Base (Notion, accessible via MCP)
+
+**What goes in Notion** (searchable, shareable, persistent):
+- Major findings and results (simulation outcomes, measurement conclusions)
+- Device specs and parameters (Big Endeavour, TWPA devices)
+- Procedures and how-tos (measurement setup, analysis workflows)
+- Sample data and key plots (representative results for reference)
+- Project status and roadmaps
+
+**What stays in `~/.claude/docs/`** (Claude Code agent context):
+- Claude-specific instructions (CLAUDE.md, project configs)
+- Detailed implementation plans (code specs, function signatures)
+- Debugging notes (session-specific troubleshooting)
+- Code patterns and gotchas (agent working memory)
+
+**Rule**: After completing a significant simulation, measurement, or analysis, offer to save key results to Notion. Use the Projects, Devices, Procedures, and References databases.
+
+---
+
 ## Workflow
 
 - **Always use `ssh -T`** for remote commands
@@ -103,6 +124,15 @@ simDict = {
 - **Sessions are disposable, CLAUDE.md is permanent**. Document outcomes in `~/.claude/docs/` and push to git.
 - **Docs repo**: `~/.claude/docs/` → `git@github.ibm.com:Ruichen-Zhao/claude_notebook.git`
 - **Named CLI sessions** for focused work: `claude --resume "chi-sweep"`, `claude --resume "noise-run"`, etc.
+
+### Simulation Output Convention
+**All simulation scripts must save results into timestamped folders:**
+- **Folder**: `results/YYYYMMDD_HHMM_<script_name>/`
+- **Data**: `.npz` file with all numerical arrays (reproducible, reloadable)
+- **Plots**: `.html` Plotly interactive plots
+- **Settings**: `.json` with simulation parameters (optional but recommended)
+- Create via `os.makedirs(out_dir, exist_ok=True)` at script start
+- After run, `scp` timestamped folder to local `~/projects/<project>/sim_outputs/`
 
 ---
 

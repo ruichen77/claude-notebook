@@ -18,6 +18,15 @@ Duffing oscillator Q-DTC-Q CZ gate simulation with qiskit-dynamics + JAX pmap.
 4. **Commit on landsman3** after successful test
 5. **Copy results locally** to `~/projects/dtc/sim_outputs/`
 
+## Output Convention
+
+All example scripts **must** save results into timestamped folders under `results/`:
+- **Folder**: `results/YYYYMMDD_HHMM_<script_name>/`
+- **Data**: `.npz` file with all numerical arrays (energies, eigenvectors, parameters, etc.)
+- **Plots**: `.html` Plotly interactive plots
+- Scripts create `results/` and timestamped subfolder via `os.makedirs(out_dir, exist_ok=True)`
+- On completion, `scp` the timestamped folder to `~/projects/dtc/sim_outputs/dtc_cz_sim_qiskit/`
+
 ## Package Structure
 
 ```
