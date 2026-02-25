@@ -8,15 +8,23 @@ Double Transmon Coupler simulation, spectroscopy prediction, and dispersive shif
 - **Dispersive shift calculator**: `landsman2:/home/US8J4928/repos/dispersive_shift_calculator/`
 - **Spectroscopy prediction**: local `~/repos/dtc_spectroscopy_prediction/`
 - **qss-pulsegen**: `landsman2:/home/US8J4928/repos/qss-pulsegen/` (IBM pulse shape library, source of Ramen pulse)
-- **duffing_cz (qiskit-dynamics)**: local `~/repos/dtc_cz_sim_qiskit/` → deploy to `landsman3:.../dtc_cz_sim_qiskit/` (qiskit_dyn env). See `dtc_cz/duffing_cz_package.md`.
+- **duffing_cz (qiskit-dynamics)**: `git@github.ibm.com:Ruichen-Zhao/dtc_cz_sim_qiskit.git` — synced via git across all machines. See `dtc_cz/duffing_cz_package.md`.
+  - Local (dev): `~/repos/dtc_cz_sim_qiskit/`
+  - landsman3: `.../dtc_cz_sim_qiskit/` (qiskit_dyn env)
+  - CCC: `/u/ruichenzhao/repos/dtc_cz_sim_qiskit/` (duffing_cz env, A100 GPUs)
+- **adiabatic_cz (charge-basis + eigenbasis)**: `git@github.ibm.com:Ruichen-Zhao/dtc_adiabatic_sim.git` — rotating-basis CZ sim. See `dtc_cz/adiabatic_cz_package.md`.
+  - Local (dev): `~/repos/dtc_adiabatic_sim/`
+  - CCC (GPU): `/u/ruichenzhao/repos/dtc_adiabatic_sim/` (duffing_cz env)
+  - landsman3 (CPU): `.../dtc_adiabatic_sim/` (qiskit_dyn env)
 - **Simulation outputs**: `~/repos/sim_outputs/` (spectroscopy, dtc_plots, dtc_cz_sim_results, etc.)
 
 ### Development Workflow (duffing_cz)
-**Develop locally → deploy to remote for testing.** Never edit directly on remote.
+**Develop locally → git push → git pull on remote → run.** Never edit directly on remote.
 1. Edit code in `~/repos/dtc_cz_sim_qiskit/`
-2. `scp` changed files to `landsman3:.../dtc_cz_sim_qiskit/`
-3. Run on landsman3 with `conda run -n qiskit_dyn python -u ...`
-4. Commit on landsman3 after successful test
+2. `git commit && git push`
+3. On remote: `cd ~/repos/dtc_cz_sim_qiskit && git pull`
+4. Run on landsman3: `conda run -n qiskit_dyn python -u ...`
+5. Run on CCC: submit via `bsub` (see `ccc/submit.sh`)
 
 ## Key Docs (in ~/.claude/docs/)
 
@@ -38,6 +46,7 @@ Start with `concepts/quantum_simulation_concepts.md` for refresher.
 - `dtc_cz/qss_pulsegen_pulse_shapes.md` - **Pulse shape reference**: All shapes in qss-pulsegen, Ramen pulse math & physics, mapping to DTC CZ parameters
 - `dtc_cz/pulse_shape_comparison.md` - **CRITICAL**: qss-pulsegen vs dtc_cz_sim pulse comparison. Our "trapezoid" uses COSINE ramps (not linear like hardware). Ramen/square_ramen match.
 - `dtc_cz/duffing_cz_package.md` - **duffing_cz package**: API reference, usage examples, dev workflow
+- `dtc_cz/adiabatic_cz_package.md` - **adiabatic_cz package**: charge-basis + eigenbasis CZ sim, GPU-compatible
 
 ## Default Parameters (Big Endeavour Q-DTC-Q)
 
@@ -133,7 +142,7 @@ Automated exploration of the full (gate_time, phi_interaction) parameter space:
 
 ### General Rule (ALL simulation scripts)
 Every simulation script **must** save outputs into a timestamped subfolder:
-- **On remote**: `results/YYYYMMDD_HHMM_<script_name>/`
+- **On remote**: `results/YYYYMMDD_HHMM_<server>_<script_name>/`
 - **Contents**: `.npz` data files (all numerical arrays) + `.html` Plotly plots + any JSON settings
 - Scripts create the folder via `os.makedirs(out_dir, exist_ok=True)`
 - This keeps results from different runs organized and reproducible
@@ -144,14 +153,15 @@ Every simulation script **must** save outputs into a timestamped subfolder:
 ```
 sim_outputs/
 ├── dtc_cz_sim_results/           # RockBottom-based CZ sim
-│   ├── 20250213_2038_layer0_energy_spectrum/
-│   └── 20250213_2246_fixed_time_cz_comparison/
+│   ├── 20250213_2038_landsman2_layer0_energy_spectrum/
+│   └── 20250213_2246_landsman2_fixed_time_cz_comparison/
 └── dtc_cz_sim_qiskit/            # Duffing/qiskit-dynamics CZ sim
-    └── 20260219_2051_first_duffing_cz_run/
+    └── 20260219_2051_landsman3_first_duffing_cz_run/
 ```
 
-**Naming convention**: `YYYYMMDD_HHMM_<short_summary>/`
+**Naming convention**: `YYYYMMDD_HHMM_<server>_<short_summary>/`
 - Timestamp = when the sim started on the remote server
+- Server = which machine ran the sim (landsman2, landsman3, ccc)
 - Summary = script name or brief description of what was run
 
 **Workflow**:
