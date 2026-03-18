@@ -32,10 +32,11 @@ Require SSH ControlMaster: user must SSH manually first, keep terminal open, the
 
 ### landsman2
 - Direct SSH key access
+- **Simulation data storage**: **Always use `/data/rzhao/`** for simulation outputs and large data files on any landsman server (shared 30T NFS mount). Do NOT store simulation data under `/home` — it has limited space. Create `/data/rzhao/` if it doesn't exist.
 - **EnhancedSmarterThanARock**: `/home/US8J4928/repos/EnhancedSmarterThanARock/` (always use for simulations)
 - **Dispersive shift calculator**: `/home/US8J4928/repos/dispersive_shift_calculator/`
 - **Hardware**: 28 cores (2×14, no HT), 1 TB RAM, 2 NUMA nodes
-- **Parallelism**: Q-DTC-Q → 28 cores (~0.07s/point); R-Q-DTC-Q-R → 21 cores (~11s/point). 28 cores is SLOWER for R-Q-DTC-Q-R (NUMA cross-socket overhead).
+- **Parallelism**: Always use **21 workers** for multiprocessing (28 causes NUMA cross-socket contention and can hang eigenbasis computation). Q-DTC-Q → ~0.07s/point; R-Q-DTC-Q-R → ~11s/point.
 
 ---
 
@@ -127,12 +128,76 @@ simDict = {
 
 ### Simulation Output Convention
 **All simulation scripts must save results into timestamped folders:**
-- **Folder**: `results/YYYYMMDD_HHMM_<script_name>/`
+- **Folder**: `results/YYYYMMDD_HHMM_<server>_<script_name>/`
 - **Data**: `.npz` file with all numerical arrays (reproducible, reloadable)
 - **Plots**: `.html` Plotly interactive plots
 - **Settings**: `.json` with simulation parameters (optional but recommended)
 - Create via `os.makedirs(out_dir, exist_ok=True)` at script start
 - After run, `scp` timestamped folder to local `~/projects/<project>/sim_outputs/`
+
+### Simulation Catalogue (MANDATORY)
+**Every project has a `catalogue.md` file. You MUST update it for every simulation run.**
+
+This is critical for session recovery — if the computer reboots or the session crashes, the next agent reads `catalogue.md` to know exactly what was running and how to check on it.
+
+**BEFORE launching a simulation:**
+1. Append a new entry to `~/projects/<project>/catalogue.md`
+2. Include ALL of the following fields:
+   - **Run ID**: sequential (e.g., `### 3A. <descriptive name>`)
+   - **Status**: `🟡 RUNNING` / `✅ COMPLETED` / `❌ FAILED` / `⏸️ PENDING`
+   - **Launched**: timestamp (YYYY-MM-DD HH:MM)
+   - **Server**: which machine (landsman2, CCC, timtam, etc.)
+   - **tmux session**: session name (e.g., `tmux attach -t sim_name`)
+   - **Server dir**: full path to results on the remote server
+   - **Log file**: full path to the log file for monitoring (`tail -f ...`)
+   - **Script**: what script was run and with what key arguments
+   - **Config/Parameters**: key simulation parameters (brief)
+   - **Purpose**: one-line description of what this run is investigating
+   - **How to check**: exact command to check status (e.g., `ssh -T server "tail -5 /path/to/log"`)
+   - **Expected duration**: rough estimate if known
+   - **Local copy**: where results will be scp'd to (leave blank until done)
+
+**AFTER a simulation completes (or fails):**
+1. Update the status field (`🟡 RUNNING` → `✅ COMPLETED` or `❌ FAILED`)
+2. Add **Results summary**: key findings, output file paths
+3. Add **Local copy**: path after scp'ing results locally
+
+**On session start (resuming work):**
+- Read `catalogue.md` and check status of any `🟡 RUNNING` entries
+- Report their status to the user before proceeding
+
+**Template:**
+```markdown
+### <ID>. <Descriptive Name>
+- **Status**: 🟡 RUNNING
+- **Launched**: 2026-03-18 14:30
+- **Server**: landsman2
+- **tmux session**: `sim_chi_sweep` → `ssh -T landsman2 "tmux attach -t sim_chi_sweep"`
+- **Server dir**: `/data/rzhao/results/20260318_1430_landsman2_chi_sweep/`
+- **Log file**: `ssh -T landsman2 "tail -20 /data/rzhao/results/.../run.log"`
+- **Script**: `python -u sweep_chi.py --phi-range 0.11 0.5 --n-points 200`
+- **Config**: Q-DTC-Q, default BE params, phi sweep 0.11–0.5, 200 points
+- **Purpose**: Map dispersive shift vs flux for Big Endeavour
+- **How to check**: `ssh -T landsman2 "tail -5 /data/rzhao/results/.../run.log"`
+- **Expected duration**: ~3 hours (200 pts × ~50s/pt)
+- **Local copy**: _(pending)_
+```
+
+---
+
+## Diary (Daily Summary)
+
+**At the end of every session** (or when the user says "done for today"), write a diary entry to **Notion**:
+
+- **Where**: Create a page in the Notion workspace, titled `Diary — YYYY-MM-DD — <project>`
+- **If multiple sessions in one day**, update the existing day's page (append, don't overwrite)
+- **Content**:
+  - **Tasks Completed** — brief description of each task done today
+  - **Key Conclusions / Findings** — what was learned, decided, or confirmed
+  - **Simulation & Data Links** — paths to `sim_outputs/` folders, key files created/modified, with brief descriptions of what each contains
+  - **Next Steps** — what remains to be done or follow-up items
+- **Proactively offer** to write the diary if the session involved meaningful work (simulations, analysis, debugging) — don't wait to be asked
+- Keep entries concise but complete enough to reconstruct context in a future session
 
 ---
 
