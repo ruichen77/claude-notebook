@@ -136,39 +136,49 @@ simDict = {
 - After run, `scp` timestamped folder to local `~/projects/<project>/sim_outputs/`
 
 ### Simulation Catalogue (MANDATORY)
-**Every project has a `catalogue.md` file. You MUST update it for every simulation run.**
+**Every project has a `catalogue/` directory with weekly log files. You MUST update it for every simulation run.**
 
-This is critical for session recovery — if the computer reboots or the session crashes, the next agent reads `catalogue.md` to know exactly what was running and how to check on it.
+This is critical for session recovery — if the computer reboots or the session crashes, the next agent reads the catalogue to know exactly what was running and how to check on it.
+
+**File structure:**
+```
+~/projects/<project>/catalogue/
+├── 2026-W12.md    # Week of 2026-03-16 (Mon) to 2026-03-22 (Sun)
+├── 2026-W11.md    # Week of 2026-03-09 to 2026-03-15
+└── ...
+```
+- **Filename**: `YYYY-WNN.md` where NN is the ISO week number (Monday-start)
+- Create the file if it doesn't exist when logging a new run
+
+**On session start:**
+1. Read the **current week's** catalogue file (and previous week's if today is Mon/Tue)
+2. Check status of any `🟡 RUNNING` entries — report to user before proceeding
+3. **Offer**: "Need context from earlier weeks? I can check `catalogue/` for older logs."
 
 **BEFORE launching a simulation:**
-1. Append a new entry to `~/projects/<project>/catalogue.md`
-2. Include ALL of the following fields:
-   - **Run ID**: sequential (e.g., `### 3A. <descriptive name>`)
-   - **Status**: `🟡 RUNNING` / `✅ COMPLETED` / `❌ FAILED` / `⏸️ PENDING`
-   - **Launched**: timestamp (YYYY-MM-DD HH:MM)
-   - **Server**: which machine (landsman2, CCC, timtam, etc.)
-   - **tmux session**: session name (e.g., `tmux attach -t sim_name`)
-   - **Server dir**: full path to results on the remote server
-   - **Log file**: full path to the log file for monitoring (`tail -f ...`)
-   - **Script**: what script was run and with what key arguments
-   - **Config/Parameters**: key simulation parameters (brief)
-   - **Purpose**: one-line description of what this run is investigating
-   - **How to check**: exact command to check status (e.g., `ssh -T server "tail -5 /path/to/log"`)
-   - **Expected duration**: rough estimate if known
-   - **Local copy**: where results will be scp'd to (leave blank until done)
+Append a new entry to the current week's file with ALL of these fields:
+- **Run ID**: sequential within the week (e.g., `### W12-01. <descriptive name>`)
+- **Status**: `🟡 RUNNING` / `✅ COMPLETED` / `❌ FAILED` / `⏸️ PENDING`
+- **Launched**: timestamp (YYYY-MM-DD HH:MM)
+- **Server**: which machine (landsman2, CCC, timtam, etc.)
+- **tmux session**: session name (e.g., `tmux attach -t sim_name`)
+- **Server dir**: full path to results on the remote server
+- **Log file**: full path to the log file for monitoring (`tail -f ...`)
+- **Script**: what script was run and with what key arguments
+- **Config/Parameters**: key simulation parameters (brief)
+- **Purpose**: one-line description of what this run is investigating
+- **How to check**: exact command to check status (e.g., `ssh -T server "tail -5 /path/to/log"`)
+- **Expected duration**: rough estimate if known
+- **Local copy**: where results will be scp'd to (leave blank until done)
 
 **AFTER a simulation completes (or fails):**
 1. Update the status field (`🟡 RUNNING` → `✅ COMPLETED` or `❌ FAILED`)
 2. Add **Results summary**: key findings, output file paths
 3. Add **Local copy**: path after scp'ing results locally
 
-**On session start (resuming work):**
-- Read `catalogue.md` and check status of any `🟡 RUNNING` entries
-- Report their status to the user before proceeding
-
 **Template:**
 ```markdown
-### <ID>. <Descriptive Name>
+### W12-01. Chi Sweep Big Endeavour
 - **Status**: 🟡 RUNNING
 - **Launched**: 2026-03-18 14:30
 - **Server**: landsman2
