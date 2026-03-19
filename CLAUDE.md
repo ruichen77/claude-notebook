@@ -38,10 +38,10 @@ Require SSH ControlMaster: user must SSH manually first, keep terminal open, the
 
 | Server | vCPUs | RAM | Max Workers | Status |
 |--------|-------|-----|-------------|--------|
-| landsman1 | ? | ? | ? | Unreachable (IT ticket open) |
+| landsman1 | — | — | — | Decommissioned (broken hardware) |
 | landsman2 | 28 | 1.0 TiB | 21 | Online |
 | landsman3 | 28 | 502 GiB | 21 | Online |
-| landsman4 | ? | ? | ? | SSH key not authorized (IT ticket open) |
+| landsman4 | 56 | 503 GiB | ~42 (needs benchmarking) | Online — no NFS mount yet, cannot use for auto-dispatch |
 | landsman5 | 256 | 1.0 TiB | ~192 (needs benchmarking) | Online |
 
 **Key repos on landsman servers:**
