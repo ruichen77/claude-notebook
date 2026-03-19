@@ -4,10 +4,10 @@ Double Transmon Coupler simulation, spectroscopy prediction, and dispersive shif
 
 ## Code Repos
 
-- **Simulator**: `landsman2:/home/US8J4928/repos/EnhancedSmarterThanARock/` (always use for simulations)
-- **Dispersive shift calculator**: `landsman2:/home/US8J4928/repos/dispersive_shift_calculator/`
+- **Simulator**: `landsman servers:/data/rzhao/repos/EnhancedSmarterThanARock/` (always use for simulations)
+- **Dispersive shift calculator**: `landsman servers:/data/rzhao/repos/dispersive_shift_calculator/`
 - **Spectroscopy prediction**: local `~/repos/dtc_spectroscopy_prediction/`
-- **qss-pulsegen**: `landsman2:/home/US8J4928/repos/qss-pulsegen/` (IBM pulse shape library, source of Ramen pulse)
+- **qss-pulsegen**: `landsman servers:/data/rzhao/repos/qss-pulsegen/` (IBM pulse shape library, source of Ramen pulse)
 - **duffing_cz (qiskit-dynamics)**: `git@github.ibm.com:Ruichen-Zhao/dtc_cz_sim_qiskit.git` — synced via git across all machines. See `dtc_cz/duffing_cz_package.md`.
   - Local (dev): `~/repos/dtc_cz_sim_qiskit/`
   - landsman3: `.../dtc_cz_sim_qiskit/` (qiskit_dyn env)
@@ -69,8 +69,8 @@ simDict = {
 
 ## CZ Gate Simulation (dtc_cz_sim)
 
-- **Repo**: `landsman2:/home/US8J4928/repos/dtc_cz_sim/`
-- **Results**: `landsman2:.../dtc_cz_sim/results/` → copy locally to `~/projects/dtc/sim_outputs/dtc_cz_sim_results/` (see Result Organization below)
+- **Repo**: `landsman servers:/data/rzhao/repos/dtc_cz_sim/`
+- **Results**: `<server>:/data/rzhao/repos/dtc_cz_sim/results/` → copy locally to `~/projects/dtc/sim_outputs/dtc_cz_sim_results/` (see Result Organization below)
 - **Roadmap**: `~/.claude/docs/dtc_cz/dtc_cz_sim_roadmap.md`
 - **Energy level plotting design**: `~/.claude/docs/dtc_cz/energy_level_plotting_design.md`
 - **Key scripts**:
@@ -191,7 +191,7 @@ sim_outputs/
 ### What's running
 - **tmux session `pw_sweep`** on landsman2:
   ```
-  ssh landsman2 "tail -f /home/US8J4928/repos/dtc_adiabatic_sim/results/pulse_width_sweep.log"
+  ssh landsman2 "tail -f /data/rzhao/repos/dtc_adiabatic_sim/results/pulse_width_sweep.log"
   ```
 - Output dir: `results/20260303_2119_landsman2_pulse_width_sweep_ramen/`
 - Status: first 2/10 gate times completed (35 ns: F=0.9999, 50.6 ns: F=0.99997), subprocess mode should avoid OOM for remaining 8
@@ -207,7 +207,7 @@ Package installed in **qiskit_dyn** conda env via `pip install -e .` (editable).
 
 ## Compute
 
-Run simulations on **landsman2** (28 cores, 1TB RAM):
+Run simulations on **landsman servers (see Server Selection Protocol in global CLAUDE.md)**:
 - Q-DTC-Q (432 dim): 28 cores, ~0.07s/point
 - R-Q-DTC-Q-R (3888 dim): 21 cores, ~11s/point (28 cores SLOWER due to NUMA)
 - **⚠️ JAX/LLVM limit**: `max_map_count=65530` — each JAX JIT compilation consumes ~20K maps. Max 2–3 JIT compilations per process before OOM. Use subprocess isolation for sweeps.

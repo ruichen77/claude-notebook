@@ -30,13 +30,25 @@ Require SSH ControlMaster: user must SSH manually first, keep terminal open, the
 - **Home**: `/u/ruichenzhao/` (100 GB)
 - **Full guide**: `~/.claude/docs/ccc_gpu_guide.md`
 
-### landsman2
-- Direct SSH key access
-- **Simulation data storage**: **Always use `/data/rzhao/`** for simulation outputs and large data files on any landsman server (shared 30T NFS mount). Do NOT store simulation data under `/home` — it has limited space. Create `/data/rzhao/` if it doesn't exist.
-- **EnhancedSmarterThanARock**: `/home/US8J4928/repos/EnhancedSmarterThanARock/` (always use for simulations)
-- **Dispersive shift calculator**: `/home/US8J4928/repos/dispersive_shift_calculator/`
-- **Hardware**: 28 cores (2×14, no HT), 1 TB RAM, 2 NUMA nodes
-- **Parallelism**: Always use **21 workers** for multiprocessing (28 causes NUMA cross-socket contention and can hang eigenbasis computation). Q-DTC-Q → ~0.07s/point; R-Q-DTC-Q-R → ~11s/point.
+### Landsman Servers (Direct SSH key access, no 2FA)
+
+**Simulation data storage**: **Always use `/data/rzhao/`** for simulation outputs and large data files on any landsman server (shared 30T NFS mount). Do NOT store simulation data under `/home` — it has limited space. Create `/data/rzhao/` if it doesn't exist.
+
+**Full inventory**: See memory file `reference_landsman_servers.md` for detailed hardware specs.
+
+| Server | vCPUs | RAM | Max Workers | Status |
+|--------|-------|-----|-------------|--------|
+| landsman1 | ? | ? | ? | Unreachable (IT ticket open) |
+| landsman2 | 28 | 1.0 TiB | 21 | Online |
+| landsman3 | 28 | 502 GiB | 21 | Online |
+| landsman4 | ? | ? | ? | SSH key not authorized (IT ticket open) |
+| landsman5 | 256 | 1.0 TiB | ~192 (needs benchmarking) | Online |
+
+**Key repos on landsman servers:**
+- **EnhancedSmarterThanARock**: `/data/rzhao/repos/EnhancedSmarterThanARock/` (always use for simulations)
+- **Dispersive shift calculator**: `/data/rzhao/repos/dispersive_shift_calculator/`
+
+**Parallelism note**: On landsman2/3, always use **21 workers** (28 causes NUMA cross-socket contention and can hang eigenbasis computation). Q-DTC-Q → ~0.07s/point; R-Q-DTC-Q-R → ~11s/point.
 
 ---
 
@@ -135,6 +147,34 @@ simDict = {
 - Create via `os.makedirs(out_dir, exist_ok=True)` at script start
 - After run, `scp` timestamped folder to local `~/projects/<project>/sim_outputs/`
 
+### Server Selection Protocol (MANDATORY before every simulation launch)
+**Do NOT hardcode a server.** Before launching any simulation, follow these steps:
+
+**Step 1 — Probe all online servers in parallel:**
+```bash
+ssh -o ConnectTimeout=5 -T landsman2 "uptime; nproc; free -h | head -2; tmux ls 2>/dev/null || echo 'no tmux sessions'"
+ssh -o ConnectTimeout=5 -T landsman3 "uptime; nproc; free -h | head -2; tmux ls 2>/dev/null || echo 'no tmux sessions'"
+ssh -o ConnectTimeout=5 -T landsman5 "uptime; nproc; free -h | head -2; tmux ls 2>/dev/null || echo 'no tmux sessions'"
+```
+Skip any server that times out (UNREACHABLE).
+
+**Step 2 — Parse load:** `load_ratio = load_1min / nproc`
+- < 0.1 → **idle** (fully available)
+- 0.1–0.7 → **partially loaded** (usable, reduce `-j` workers proportionally)
+- \> 0.7 → **heavily loaded** (avoid)
+
+Also check `tmux ls` output for running simulation sessions from the catalogue.
+
+**Step 3 — Pick server:**
+1. If one idle → use it
+2. If multiple idle → landsman5 for large jobs (>100 sweep points), landsman2/3 for smaller jobs
+3. If none idle → least loaded, with reduced `-j` workers
+4. If all heavily loaded or unreachable → ask the user
+
+**Step 4 — Record decision** in the catalogue entry's `Server selection` field (see template below).
+
+**Important:** All repos and results live on `/data/rzhao/` (shared NFS mount visible from all servers). Always `cd /data/rzhao/repos/...` for simulation work — never use `/home/US8J4928/`.
+
 ### Simulation Catalogue (MANDATORY)
 **Every project has a `catalogue/` directory with weekly log files. You MUST update it for every simulation run.**
 
@@ -160,7 +200,8 @@ Append a new entry to the current week's file with ALL of these fields:
 - **Run ID**: sequential within the week (e.g., `### W12-01. <descriptive name>`)
 - **Status**: `🟡 RUNNING` / `✅ COMPLETED` / `❌ FAILED` / `⏸️ PENDING`
 - **Launched**: timestamp (YYYY-MM-DD HH:MM)
-- **Server**: which machine (landsman2, CCC, timtam, etc.)
+- **Server**: which machine (landsman2, landsman3, landsman5, CCC, timtam, etc.)
+- **Server selection**: load probe results and rationale (e.g., "Checked landsman2 (load 18.3/28, busy), landsman3 (load 0.2/28, idle). Picked landsman3 — idle.")
 - **tmux session**: session name (e.g., `tmux attach -t sim_name`)
 - **Server dir**: full path to results on the remote server
 - **Log file**: full path to the log file for monitoring (`tail -f ...`)
@@ -182,6 +223,7 @@ Append a new entry to the current week's file with ALL of these fields:
 - **Status**: 🟡 RUNNING
 - **Launched**: 2026-03-18 14:30
 - **Server**: landsman2
+- **Server selection**: Checked landsman2 (load 18.3/28, busy), landsman3 (load 0.2/28, idle), landsman5 (load 0.1/256, idle). Picked landsman5 — idle and most powerful for 200-point sweep.
 - **tmux session**: `sim_chi_sweep` → `ssh -T landsman2 "tmux attach -t sim_chi_sweep"`
 - **Server dir**: `/data/rzhao/results/20260318_1430_landsman2_chi_sweep/`
 - **Log file**: `ssh -T landsman2 "tail -20 /data/rzhao/results/.../run.log"`
