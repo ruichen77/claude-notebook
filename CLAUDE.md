@@ -32,7 +32,9 @@ Require SSH ControlMaster: user must SSH manually first, keep terminal open, the
 
 ### Landsman Servers (Direct SSH key access, no 2FA)
 
-**Simulation data storage**: **Always use `/data/rzhao/`** for simulation outputs and large data files on any landsman server (shared 30T NFS mount). Do NOT store simulation data under `/home` — it has limited space. Create `/data/rzhao/` if it doesn't exist.
+**`/data/rzhao/` is a shared 30T NFS mount visible from ALL landsman servers.** Store everything here — repos, scripts, simulation results. Never use `/home/US8J4928/` for simulation work. Because NFS is shared, code and data written on one server are immediately accessible from any other.
+
+**Maximize throughput**: We have 4 online servers totalling 368 vCPUs. For large parameter sweeps, **split the work across multiple servers in parallel** (e.g., split a 400-point sweep into chunks and run simultaneously on landsman4 + landsman5). Always use the Server Selection Protocol to pick the best server(s).
 
 **Full inventory**: See memory file `reference_landsman_servers.md` for detailed hardware specs.
 
@@ -166,15 +168,15 @@ Skip any server that times out (UNREACHABLE).
 
 Also check `tmux ls` output for running simulation sessions from the catalogue.
 
-**Step 3 — Pick server:**
-1. If one idle → use it
-2. If multiple idle → landsman5 for large jobs (>100 sweep points), landsman4 for mid-size jobs, landsman2/3 for smaller jobs
+**Step 3 — Pick server(s):**
+1. **For large sweeps (>100 points): split across multiple idle servers** to maximize throughput. E.g., split 400 points into 200+200 on landsman5 and landsman4, each in its own tmux session writing to the same `/data/rzhao/results/` folder. Combine results after both finish.
+2. If single-server is sufficient → landsman5 for large jobs, landsman4 for mid-size, landsman2/3 for smaller jobs
 3. If none idle → least loaded, with reduced `-j` workers
 4. If all heavily loaded or unreachable → ask the user
 
 **Step 4 — Record decision** in the catalogue entry's `Server selection` field (see template below).
 
-**Important:** All repos and results live on `/data/rzhao/` (shared NFS mount visible from all servers). Always `cd /data/rzhao/repos/...` for simulation work — never use `/home/US8J4928/`.
+**Important — shared NFS**: `/data/rzhao/` is mounted on every landsman server. All repos, scripts, and results MUST live there (under `/data/rzhao/repos/` and `/data/rzhao/results/`). This is what enables multi-server parallelism — any server can read/write the same files. Never use `/home/US8J4928/`.
 
 ### Simulation Catalogue (MANDATORY)
 **Every project has a `catalogue/` directory with weekly log files. You MUST update it for every simulation run.**
