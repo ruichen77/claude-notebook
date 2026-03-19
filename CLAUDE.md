@@ -41,14 +41,14 @@ Require SSH ControlMaster: user must SSH manually first, keep terminal open, the
 | landsman1 | — | — | — | Decommissioned (broken hardware) |
 | landsman2 | 28 | 1.0 TiB | 21 | Online |
 | landsman3 | 28 | 502 GiB | 21 | Online |
-| landsman4 | 56 | 503 GiB | ~42 (needs benchmarking) | Online — no NFS mount yet, cannot use for auto-dispatch |
+| landsman4 | 56 | 503 GiB | ~42 (needs benchmarking) | Online |
 | landsman5 | 256 | 1.0 TiB | ~192 (needs benchmarking) | Online |
 
 **Key repos on landsman servers:**
 - **EnhancedSmarterThanARock**: `/data/rzhao/repos/EnhancedSmarterThanARock/` (always use for simulations)
 - **Dispersive shift calculator**: `/data/rzhao/repos/dispersive_shift_calculator/`
 
-**Parallelism note**: On landsman2/3, always use **21 workers** (28 causes NUMA cross-socket contention and can hang eigenbasis computation). Q-DTC-Q → ~0.07s/point; R-Q-DTC-Q-R → ~11s/point.
+**Parallelism note**: On landsman2/3, always use **21 workers** (28 causes NUMA cross-socket contention and can hang eigenbasis computation). On landsman4, use **~42 workers** (56 vCPUs with HT, needs benchmarking). Q-DTC-Q → ~0.07s/point; R-Q-DTC-Q-R → ~11s/point.
 
 ---
 
@@ -154,6 +154,7 @@ simDict = {
 ```bash
 ssh -o ConnectTimeout=5 -T landsman2 "uptime; nproc; free -h | head -2; tmux ls 2>/dev/null || echo 'no tmux sessions'"
 ssh -o ConnectTimeout=5 -T landsman3 "uptime; nproc; free -h | head -2; tmux ls 2>/dev/null || echo 'no tmux sessions'"
+ssh -o ConnectTimeout=5 -T landsman4 "uptime; nproc; free -h | head -2; tmux ls 2>/dev/null || echo 'no tmux sessions'"
 ssh -o ConnectTimeout=5 -T landsman5 "uptime; nproc; free -h | head -2; tmux ls 2>/dev/null || echo 'no tmux sessions'"
 ```
 Skip any server that times out (UNREACHABLE).
@@ -167,7 +168,7 @@ Also check `tmux ls` output for running simulation sessions from the catalogue.
 
 **Step 3 — Pick server:**
 1. If one idle → use it
-2. If multiple idle → landsman5 for large jobs (>100 sweep points), landsman2/3 for smaller jobs
+2. If multiple idle → landsman5 for large jobs (>100 sweep points), landsman4 for mid-size jobs, landsman2/3 for smaller jobs
 3. If none idle → least loaded, with reduced `-j` workers
 4. If all heavily loaded or unreachable → ask the user
 
