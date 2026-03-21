@@ -132,6 +132,7 @@ simDict = {
 
 ## Workflow
 
+- **Parallelize with subagents**: When a task has independent subtasks (e.g., probing multiple servers, writing a script while reading docs, analyzing multiple datasets), launch subagents in parallel rather than doing things sequentially. This significantly speeds up multi-step work. Use subagents for anything that takes more than a few seconds and doesn't depend on another task's output. Don't use them for trivial single-tool operations (one grep, one file read).
 - **Always use `ssh -T`** for remote commands
 - **Use tmux** for simulations >1-2 min: `ssh -T server "tmux new -d -s sim 'cd /path && python -u script.py > output.log 2>&1'"`
 - **Always use `python -u`** (unbuffered stdout) when redirecting to log files, so output can be monitored with `tail -f` during long runs
