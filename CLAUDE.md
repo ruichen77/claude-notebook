@@ -40,7 +40,6 @@ Require SSH ControlMaster: user must SSH manually first, keep terminal open, the
 
 | Server | vCPUs | RAM | Max Workers | Status |
 |--------|-------|-----|-------------|--------|
-| landsman1 | — | — | — | Decommissioned (broken hardware) |
 | landsman2 | 28 | 1.0 TiB | 21 | Online |
 | landsman3 | 28 | 502 GiB | 21 | Online |
 | landsman4 | 56 | 503 GiB | ~42 (needs benchmarking) | Online |
@@ -51,40 +50,6 @@ Require SSH ControlMaster: user must SSH manually first, keep terminal open, the
 - **Dispersive shift calculator**: `/data/rzhao/repos/dispersive_shift_calculator/`
 
 **Parallelism note**: On landsman2/3, always use **21 workers** (28 causes NUMA cross-socket contention and can hang eigenbasis computation). On landsman4, use **~42 workers** (56 vCPUs with HT, needs benchmarking). Q-DTC-Q → ~0.07s/point; R-Q-DTC-Q-R → ~11s/point.
-
----
-
-## DTC Simulation
-
-### Documentation
-All docs in `~/.claude/docs/`. Start with `concepts/quantum_simulation_concepts.md` for refresher.
-
-Key references:
-- `concepts/rockbottom_gotchas.md` - **CRITICAL**: `state_labels_ordered` is NOT wavefunction composition
-- `concepts/dtc_state_labeling.md` - energy-ordered index vs physical photon count
-- `simulation_tools/spectroscopy_prediction_workflow.md` - M = V†QV transformation
-- `simulation_tools/coupling_transition_matrix_viz.md` - H_c vs Q_qubit vs Q_resonator
-- `implementation_plans/dispersive_coupler_plan.md` - χ calculation with both-branch tracking
-- `benchmarks/parallel_simulation_benchmarks.md`
-- `debugging_notes/chi_sweep_debugging.md`
-
-### Default Parameters (Big Endeavour Q-DTC-Q)
-```python
-simDict = {
-    'transmons': {
-        'Q0': {'f01': 4.5, 'anharm': 0.21, 'ng': 0.0, 'cutoff': 6},
-        'DT1': {'f01': 3.8, 'anharm': 0.08, 'g': 0.7, 'phi': 0.4, 'ng': 0.0, 'cutoff': 12},
-        'Q1': {'f01': 5.0, 'anharm': 0.21, 'ng': 0.0, 'cutoff': 6}
-    },
-    'couplings': [
-        ['Q0', 'DT1;0', 0.18],
-        ['Q1', 'DT1;1', 0.18],
-        ['DT1;0', 'DT1;1', 0.01],
-    ],
-    'N': 12,
-    'cutoff': 5
-}
-```
 
 ---
 
@@ -221,21 +186,21 @@ Append a new entry to the current week's file with ALL of these fields:
 2. Add **Results summary**: key findings, output file paths
 3. Add **Local copy**: path after scp'ing results locally
 
-**Template:**
+**Template:** (fill all fields from the list above)
 ```markdown
-### W12-01. Chi Sweep Big Endeavour
+### W12-01. <descriptive name>
 - **Status**: 🟡 RUNNING
-- **Launched**: 2026-03-18 14:30
-- **Server**: landsman2
-- **Server selection**: Checked landsman2 (load 18.3/28, busy), landsman3 (load 0.2/28, idle), landsman5 (load 0.1/256, idle). Picked landsman5 — idle and most powerful for 200-point sweep.
-- **tmux session**: `sim_chi_sweep` → `ssh -T landsman2 "tmux attach -t sim_chi_sweep"`
-- **Server dir**: `/data/rzhao/results/20260318_1430_landsman2_chi_sweep/`
-- **Log file**: `ssh -T landsman2 "tail -20 /data/rzhao/results/.../run.log"`
-- **Script**: `python -u sweep_chi.py --phi-range 0.11 0.5 --n-points 200`
-- **Config**: Q-DTC-Q, default BE params, phi sweep 0.11–0.5, 200 points
-- **Purpose**: Map dispersive shift vs flux for Big Endeavour
-- **How to check**: `ssh -T landsman2 "tail -5 /data/rzhao/results/.../run.log"`
-- **Expected duration**: ~3 hours (200 pts × ~50s/pt)
+- **Launched**: YYYY-MM-DD HH:MM
+- **Server**: landsmanN
+- **Server selection**: <load probe results and rationale>
+- **tmux session**: `session_name` → `ssh -T landsmanN "tmux attach -t session_name"`
+- **Server dir**: `/data/rzhao/results/YYYYMMDD_HHMM_landsmanN_<name>/`
+- **Log file**: `ssh -T landsmanN "tail -20 /data/rzhao/results/.../<name>.log"`
+- **Script**: `python -u <script> <args>`
+- **Config**: <key parameters, brief>
+- **Purpose**: <one line>
+- **How to check**: `ssh -T landsmanN "tail -5 /data/rzhao/results/.../<name>.log"`
+- **Expected duration**: <estimate>
 - **Local copy**: _(pending)_
 ```
 
@@ -259,17 +224,4 @@ Append a new entry to the current week's file with ALL of these fields:
 
 ## Plot Styling
 
-All plots: **bold black borders**.
-
-```python
-# Matplotlib
-for spine in ax.spines.values():
-    spine.set_linewidth(2)
-    spine.set_color("black")
-
-# Plotly
-fig.update_layout(
-    xaxis=dict(showline=True, linewidth=2, linecolor='black', mirror=True),
-    yaxis=dict(showline=True, linewidth=2, linecolor='black', mirror=True),
-)
-```
+All plots: **bold black borders** (both Matplotlib and Plotly). See `~/.claude/docs/plot_styling.md` for code snippets.

@@ -4,10 +4,10 @@ Double Transmon Coupler simulation, spectroscopy prediction, and dispersive shif
 
 ## Code Repos
 
-- **Simulator**: `landsman servers:/data/rzhao/repos/EnhancedSmarterThanARock/` (always use for simulations)
-- **Dispersive shift calculator**: `landsman servers:/data/rzhao/repos/dispersive_shift_calculator/`
+- **Simulator**: `/data/rzhao/repos/EnhancedSmarterThanARock/` (always use for simulations)
+- **Dispersive shift calculator**: `/data/rzhao/repos/dispersive_shift_calculator/`
 - **Spectroscopy prediction**: local `~/repos/dtc_spectroscopy_prediction/`
-- **qss-pulsegen**: `landsman servers:/data/rzhao/repos/qss-pulsegen/` (IBM pulse shape library, source of Ramen pulse)
+- **qss-pulsegen**: `/data/rzhao/repos/qss-pulsegen/` (IBM pulse shape library, source of Ramen pulse)
 - **duffing_cz (qiskit-dynamics)**: `git@github.ibm.com:Ruichen-Zhao/dtc_cz_sim_qiskit.git` — synced via git across all machines. See `dtc_cz/duffing_cz_package.md`.
   - Local (dev): `~/repos/dtc_cz_sim_qiskit/`
   - landsman3: `.../dtc_cz_sim_qiskit/` (qiskit_dyn env)
@@ -69,8 +69,8 @@ simDict = {
 
 ## CZ Gate Simulation (dtc_cz_sim)
 
-- **Repo**: `landsman servers:/data/rzhao/repos/dtc_cz_sim/`
-- **Results**: `<server>:/data/rzhao/repos/dtc_cz_sim/results/` → copy locally to `~/projects/dtc/sim_outputs/dtc_cz_sim_results/` (see Result Organization below)
+- **Repo**: `/data/rzhao/repos/dtc_cz_sim/`
+- **Results**: `/data/rzhao/repos/dtc_cz_sim/results/` → copy locally to `~/projects/dtc/sim_outputs/dtc_cz_sim_results/`
 - **Roadmap**: `~/.claude/docs/dtc_cz/dtc_cz_sim_roadmap.md`
 - **Energy level plotting design**: `~/.claude/docs/dtc_cz/energy_level_plotting_design.md`
 - **Key scripts**:
@@ -140,74 +140,22 @@ Automated exploration of the full (gate_time, phi_interaction) parameter space:
 
 ## Result Organization
 
-### General Rule (ALL simulation scripts)
-Every simulation script **must** save outputs into a timestamped subfolder:
-- **On remote**: `results/YYYYMMDD_HHMM_<server>_<script_name>/`
-- **Contents**: `.npz` data files (all numerical arrays) + `.html` Plotly plots + any JSON settings
-- Scripts create the folder via `os.makedirs(out_dir, exist_ok=True)`
-- This keeps results from different runs organized and reproducible
-
-### Local archive
 **Local results** live in `~/projects/dtc/sim_outputs/`, organized by repo:
 
 ```
 sim_outputs/
 ├── dtc_cz_sim_results/           # RockBottom-based CZ sim
-│   ├── 20250213_2038_landsman2_layer0_energy_spectrum/
-│   └── 20250213_2246_landsman2_fixed_time_cz_comparison/
 └── dtc_cz_sim_qiskit/            # Duffing/qiskit-dynamics CZ sim
-    └── 20260219_2051_landsman3_first_duffing_cz_run/
 ```
 
-**Naming convention**: `YYYYMMDD_HHMM_<server>_<short_summary>/`
-- Timestamp = when the sim started on the remote server
-- Server = which machine ran the sim (landsman2, landsman3, ccc)
-- Summary = script name or brief description of what was run
+Follows global Simulation Output Convention (see CLAUDE.md). After a run, `scp` the timestamped folder into `~/projects/dtc/sim_outputs/<repo>/`.
 
-**Workflow**:
-1. Sims run on remote server, outputs land in `<repo>/results/YYYYMMDD_HHMM_<name>/`
-2. After a run, `scp` the timestamped folder locally into `~/projects/dtc/sim_outputs/<repo>/`
-3. Remote `results/` is gitignored scratch space; local copy is the organized archive
-
-## In-Progress: Pulse Width Sweep (Mar 3, 2026)
-
-### What was done
-1. **Replaced `tune_amplitude` Trotter tuning with LMDE coherent error minimization** (commit `ac16e92`)
-   - Old: brentq on conditional phase via Trotter (broken — phase wrapping bug)
-   - New: ZZ initial guess → `minimize_scalar` on `coherent_error` via LMDE
-   - Added `zz_data` param to reuse ZZ sweep across gate times (commit `01c7698`)
-   - Verified: T=75ns → F=0.999992, coherent error=7.7e-6, A=0.184 Φ₀
-
-2. **Wrote `examples/pulse_width_sweep.py`** — sweeps gate time 35–175 ns (10 points)
-   - Loads cached eigenbasis from disk (saves ~44 min)
-   - Computes ZZ once, shares via npz
-   - **Subprocess mode** (commit `d9faa5d`): each gate time runs in a fresh Python process to avoid LLVM `max_map_count` OOM (landsman2 limit: 65530)
-   - Saves: `sweep_data.npz`, `results.json`, `pulse_width_sweep.html` (Plotly)
-
-3. **Created Notion page** for experimental reference: [Big Endeavour Experimental CZ Tick Plots](https://www.notion.so/3186a7182abd81a48d9ce7ede777454d)
-   - Device params for all 7 qubits (Q0–Q6)
-   - Tick plot anomalies: T2_0 spike at 88–105 ns (4.24% coupling!), T3_0/T6_0 elevated at short widths
-
-### What's running
-- **tmux session `pw_sweep`** on landsman2:
-  ```
-  ssh landsman2 "tail -f /data/rzhao/repos/dtc_adiabatic_sim/results/pulse_width_sweep.log"
-  ```
-- Output dir: `results/20260303_2119_landsman2_pulse_width_sweep_ramen/`
-- Status: first 2/10 gate times completed (35 ns: F=0.9999, 50.6 ns: F=0.99997), subprocess mode should avoid OOM for remaining 8
-
-### To pick up
-1. Check if sweep finished: `grep 'Sweep completed' results/pulse_width_sweep.log`
-2. If finished: `scp "landsman2:repos/dtc_adiabatic_sim/results/20260303_2119_*/*" ~/projects/dtc/sim_outputs/`
-3. If OOM again: reduce n_eigs to 15, or run on CCC (higher max_map_count)
-4. Compare results with experimental tick plots (Notion page above)
-
-### ⚠️ landsman2 `adiabatic_cz` install note
+### ⚠️ landsman `adiabatic_cz` install note
 Package installed in **qiskit_dyn** conda env via `pip install -e .` (editable). Must use `conda activate qiskit_dyn` or `source conda.sh && conda activate qiskit_dyn` before running.
 
 ## Compute
 
-Run simulations on **landsman servers (see Server Selection Protocol in global CLAUDE.md)**:
-- Q-DTC-Q (432 dim): 28 cores, ~0.07s/point
-- R-Q-DTC-Q-R (3888 dim): 21 cores, ~11s/point (28 cores SLOWER due to NUMA)
-- **⚠️ JAX/LLVM limit**: `max_map_count=65530` — each JAX JIT compilation consumes ~20K maps. Max 2–3 JIT compilations per process before OOM. Use subprocess isolation for sweeps.
+Use Server Selection Protocol (global CLAUDE.md) to pick server. DTC-specific timing:
+- Q-DTC-Q (432 dim): ~0.07s/point
+- R-Q-DTC-Q-R (3888 dim): ~11s/point (use 21 workers max on landsman2/3)
+- **⚠️ JAX/LLVM limit**: `max_map_count=65530` on landsman — max 2–3 JIT compilations per process. Use subprocess isolation for sweeps.
