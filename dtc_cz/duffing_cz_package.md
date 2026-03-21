@@ -123,6 +123,11 @@ dyn = run_dynamics(system, gate_time_us=0.075, amplitude_rad=0.5*np.pi,
 fig = plot_population_dynamics(dyn)
 ```
 
+## State Label Convention
+Internal array ordering is `(Qa, Qb, CL, CR)` but **all display labels** use physical layout order:
+`|QL, CL, CR, QR⟩` — mapping the physical chain: qubit_L – coupler_L – coupler_R – qubit_R.
+This applies to: hover text (`composition_hover`), top leaker labels (`_identify_top_leakers`), and the annotation in `plot_interactive_leakage`.
+
 ## Differences from dtc_cz_sim (RockBottom-based)
 
 | Feature | duffing_cz (this) | dtc_cz_sim |
