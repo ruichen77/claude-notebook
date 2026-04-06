@@ -66,7 +66,7 @@ Require SSH ControlMaster: user must SSH manually first, keep terminal open, the
     └── sim_outputs/ # measurement results, plots
 
 ~/repos/             # Code repositories only (git repos, pip-installed tools)
-~/.claude/docs/      # All .md docs (git-tracked, backed up on GitHub)
+~/projects/twpa/.claude/  # All .md docs (git-tracked, backed up on GitHub)
 ```
 
 - **Always `cd ~/projects/<project>` before launching `claude`** for project-scoped sessions
@@ -103,7 +103,11 @@ Require SSH ControlMaster: user must SSH manually first, keep terminal open, the
 - **Always use `python -u`** (unbuffered stdout) when redirecting to log files, so output can be monitored with `tail -f` during long runs
 - **Heredoc gotcha**: quotes inside f-strings get stripped. Use scp or write locally first for complex Python.
 - **Sessions are disposable, CLAUDE.md is permanent**. Document outcomes in `~/.claude/docs/` and push to git.
-- **Docs repo**: `~/.claude/docs/` → `git@github.ibm.com:Ruichen-Zhao/claude_notebook.git`
+- **Docs repo**: This `.claude/` folder is git-tracked → `https://github.ibm.com/Ruichen-Zhao/claude_notebook.git`
+- **Auto-sync**: After creating or modifying any file in `.claude/` (excluding `settings.local.json`, `projects/`, `memory/`), stage, commit, and push the changes:
+  ```bash
+  cd /Users/ruichenzhao/projects/twpa/.claude && git add -A && git commit -m "<brief description of changes>" && git push origin main
+  ```
 - **Named CLI sessions** for focused work: `claude --resume "chi-sweep"`, `claude --resume "noise-run"`, etc.
 
 ### Simulation Output Convention
