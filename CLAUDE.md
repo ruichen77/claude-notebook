@@ -22,6 +22,17 @@ Require SSH ControlMaster: user must SSH manually first, keep terminal open, the
 ### narya Directories
 - **fridge1F Big Endeavour**: `/nas-data1/systems/fridge1F/20250728_E_BE/BE001`
 
+### Marika (Home Server — Pop!_OS)
+
+- **Login**: `ssh -T ruichenzhao@10.0.0.93` (SSH key, no 2FA — must be on home LAN)
+- **Hostname**: pop-os
+- **CPU**: 32 vCPUs
+- **RAM**: 124 GiB
+- **GPU**: NVIDIA RTX 3060 Ti (8 GB)
+- **OS**: Ubuntu 22.04 (Pop!_OS)
+- **Use for**: arXiv RAG ingestion, ML/embedding tasks, anything needing a local GPU
+- **arXiv RAG pipeline**: `~/arxiv_rag/` (ingest.py, query.py)
+
 ### CCC (Cognitive Computing Cluster)
 - **Login**: `ssh -T ruichenzhao@ccc-login1.pok.ibm.com` (SSH key, no 2FA - direct access)
 - **VPN required** if off-campus
