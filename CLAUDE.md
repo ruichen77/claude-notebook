@@ -1,242 +1,297 @@
-# Claude Code Configuration for Ruichen
+# CLAUDE.md
 
-Proactively offer to document reusable info in `~/.claude/docs/` and push to git. Keep this file concise. Split details into sub-files.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
----
+## Environment Overview
 
-## Servers
+This is a development environment focused on computational electromagnetics, quantum computing simulations, and CUDA-accelerated scientific computing. The system runs Ubuntu Linux with NVIDIA GPU support and uses conda for Python environment management.
 
-### 2FA Servers (timtam, narya)
+## Key Projects
 
-Require SSH ControlMaster: user must SSH manually first, keep terminal open, then Claude can piggyback.
+### Palace (repos/palace)
+- 3D finite element solver for computational electromagnetics
+- CMake-based C++ project using MFEM and libCEED libraries
+- Supports eigenmode calculations, frequency/time domain simulations, and adaptive mesh refinement
+- GPU acceleration via CUDA/HIP
 
-- **timtam** - `ssh timtam` (OpenQ network)
-- **narya** - `ssh narya` (OpenQ network)
-
-### timtam Directories
-- **fridge36B**: `/nas-data1/systems/fridge36B/`
-  - Setup guide: `~/.claude/docs/measurement_folder_setup.md`
-  - Current alias: `~/.localrc` defines `current` → active measurement folder
-  - Noise measurement: `timtam:/nas-data0/systems/fridge36B/Ruichen_library/twpa_noise_measurement/` → `python -m noise_measurement run -c config.yaml`
-
-### narya Directories
-- **fridge1F Big Endeavour**: `/nas-data1/systems/fridge1F/20250728_E_BE/BE001`
-
-### Marika (Home Server — Pop!_OS)
-
-- **Login**: `ssh -T ruichenzhao@10.0.0.93` (SSH key, no 2FA — must be on home LAN)
-- **Hostname**: pop-os
-- **CPU**: 32 vCPUs
-- **RAM**: 124 GiB
-- **GPU**: NVIDIA RTX 3060 Ti (8 GB)
-- **OS**: Ubuntu 22.04 (Pop!_OS)
-- **Use for**: arXiv RAG ingestion, ML/embedding tasks, anything needing a local GPU
-- **arXiv RAG pipeline**: `~/arxiv_rag/` (ingest.py, query.py)
-
-### CCC (Cognitive Computing Cluster)
-- **Login**: `ssh -T ruichenzhao@ccc-login1.pok.ibm.com` (SSH key, no 2FA - direct access)
-- **VPN required** if off-campus
-- **GPUs**: ~800+ A100 (40G/80G) + H100 (80G), 8 per node, 103 nodes
-- **Scheduler**: LSF (`bsub`/`bjobs`), queues: `normal` (no time limit), `interactive` (6hr)
-- **Home**: `/u/ruichenzhao/` (100 GB)
-- **Full guide**: `~/.claude/docs/ccc_gpu_guide.md`
-
-### Landsman Servers (Direct SSH key access, no 2FA)
-
-**`/data/rzhao/` is a shared 30T NFS mount visible from ALL landsman servers.** Store everything here — repos, scripts, simulation results. Never use `/home/US8J4928/` for simulation work. Because NFS is shared, code and data written on one server are immediately accessible from any other.
-
-**Maximize throughput**: We have 4 online servers totalling 368 vCPUs. For large parameter sweeps, **split the work across multiple servers in parallel** (e.g., split a 400-point sweep into chunks and run simultaneously on landsman4 + landsman5). Always use the Server Selection Protocol to pick the best server(s).
-
-**Full inventory**: See memory file `reference_landsman_servers.md` for detailed hardware specs.
-
-| Server | vCPUs | RAM | Max Workers | Status |
-|--------|-------|-----|-------------|--------|
-| landsman2 | 28 | 1.0 TiB | 21 | Online |
-| landsman3 | 28 | 502 GiB | 21 | Online |
-| landsman4 | 56 | 503 GiB | ~42 (needs benchmarking) | Online |
-| landsman5 | 256 | 1.0 TiB | ~192 (needs benchmarking) | Online |
-
-**Key repos on landsman servers:**
-- **EnhancedSmarterThanARock**: `/data/rzhao/repos/EnhancedSmarterThanARock/` (always use for simulations)
-- **Dispersive shift calculator**: `/data/rzhao/repos/dispersive_shift_calculator/`
-
-**Parallelism note**: On landsman2/3, always use **21 workers** (28 causes NUMA cross-socket contention and can hang eigenbasis computation). On landsman4, use **~42 workers** (56 vCPUs with HT, needs benchmarking). Q-DTC-Q → ~0.07s/point; R-Q-DTC-Q-R → ~11s/point.
-
----
-
-## Directory Structure
-
-```
-~/projects/          # Claude Code workspaces - cd here to start sessions
-├── CLAUDE.md        → ~/.claude/docs/CLAUDE.md (global config)
-├── dtc/             # DTC simulation project
-│   ├── CLAUDE.md    → ~/.claude/docs/project_dtc.md
-│   └── sim_outputs/ # simulation results, plots, data
-└── twpa/            # TWPA noise project
-    ├── CLAUDE.md    → ~/.claude/docs/project_twpa.md
-    └── sim_outputs/ # measurement results, plots
-
-~/repos/             # Code repositories only (git repos, pip-installed tools)
-~/projects/twpa/.claude/  # All .md docs (git-tracked, backed up on GitHub)
-```
-
-- **Always `cd ~/projects/<project>` before launching `claude`** for project-scoped sessions
-- **Code repos stay in `~/repos/`** - never add CLAUDE.md inside git repos
-- **Project folders hold**: CLAUDE.md (symlink), sim_outputs, scratch files, notebooks
-- **New projects**: create `~/projects/<name>/`, add `project_<name>.md` in docs repo, symlink as CLAUDE.md
-
-## Notion Knowledge Base
-
-**Workspace**: Quantum Engineering Knowledge Base (Notion, accessible via MCP)
-
-**What goes in Notion** (searchable, shareable, persistent):
-- Major findings and results (simulation outcomes, measurement conclusions)
-- Device specs and parameters (Big Endeavour, TWPA devices)
-- Procedures and how-tos (measurement setup, analysis workflows)
-- Sample data and key plots (representative results for reference)
-- Project status and roadmaps
-
-**What stays in `~/.claude/docs/`** (Claude Code agent context):
-- Claude-specific instructions (CLAUDE.md, project configs)
-- Detailed implementation plans (code specs, function signatures)
-- Debugging notes (session-specific troubleshooting)
-- Code patterns and gotchas (agent working memory)
-
-**Rule**: After completing a significant simulation, measurement, or analysis, offer to save key results to Notion. Use the Projects, Devices, Procedures, and References databases.
-
----
-
-## Workflow
-
-- **Parallelize with subagents**: When a task has independent subtasks (e.g., probing multiple servers, writing a script while reading docs, analyzing multiple datasets), launch subagents in parallel rather than doing things sequentially. This significantly speeds up multi-step work. Use subagents for anything that takes more than a few seconds and doesn't depend on another task's output. Don't use them for trivial single-tool operations (one grep, one file read).
-- **Always use `ssh -T`** for remote commands
-- **Use tmux** for simulations >1-2 min: `ssh -T server "tmux new -d -s sim 'cd /path && python -u script.py > output.log 2>&1'"`
-- **Always use `python -u`** (unbuffered stdout) when redirecting to log files, so output can be monitored with `tail -f` during long runs
-- **Heredoc gotcha**: quotes inside f-strings get stripped. Use scp or write locally first for complex Python.
-- **Sessions are disposable, CLAUDE.md is permanent**. Document outcomes in `~/.claude/docs/` and push to git.
-- **Docs repo**: This `.claude/` folder is git-tracked → `https://github.ibm.com/Ruichen-Zhao/claude_notebook.git`
-- **Auto-sync**: After creating or modifying any file in `.claude/` (excluding `settings.local.json`, `projects/`, `memory/`), stage, commit, and push the changes:
-  ```bash
-  cd /Users/ruichenzhao/projects/twpa/.claude && git add -A && git commit -m "<brief description of changes>" && git push origin main
-  ```
-- **Named CLI sessions** for focused work: `claude --resume "chi-sweep"`, `claude --resume "noise-run"`, etc.
-
-### Simulation Output Convention
-**All simulation scripts must save results into timestamped folders:**
-- **Folder**: `results/YYYYMMDD_HHMM_<server>_<script_name>/`
-- **Data**: `.npz` file with all numerical arrays (reproducible, reloadable)
-- **Plots**: `.html` Plotly interactive plots
-- **Settings**: `.json` with simulation parameters (optional but recommended)
-- Create via `os.makedirs(out_dir, exist_ok=True)` at script start
-- After run, `scp` timestamped folder to local `~/projects/<project>/sim_outputs/`
-
-### Server Selection Protocol (MANDATORY before every simulation launch)
-**Do NOT hardcode a server.** Before launching any simulation, follow these steps:
-
-**Step 1 — Probe all online servers in parallel:**
+**Build commands:**
 ```bash
-ssh -o ConnectTimeout=5 -T landsman2 "uptime; nproc; free -h | head -2; tmux ls 2>/dev/null || echo 'no tmux sessions'"
-ssh -o ConnectTimeout=5 -T landsman3 "uptime; nproc; free -h | head -2; tmux ls 2>/dev/null || echo 'no tmux sessions'"
-ssh -o ConnectTimeout=5 -T landsman4 "uptime; nproc; free -h | head -2; tmux ls 2>/dev/null || echo 'no tmux sessions'"
-ssh -o ConnectTimeout=5 -T landsman5 "uptime; nproc; free -h | head -2; tmux ls 2>/dev/null || echo 'no tmux sessions'"
+cd repos/palace
+mkdir -p build && cd build
+cmake .. [OPTIONS]
+make -j$(nproc)
 ```
-Skip any server that times out (UNREACHABLE).
 
-**Step 2 — Parse load:** `load_ratio = load_1min / nproc`
-- < 0.1 → **idle** (fully available)
-- 0.1–0.7 → **partially loaded** (usable, reduce `-j` workers proportionally)
-- \> 0.7 → **heavily loaded** (avoid)
+**Documentation:** Run `julia make.jl` from `docs/` directory
 
-Also check `tmux ls` output for running simulation sessions from the catalogue.
+### cuOPO (repos/cuOPO)
+- CUDA-based optical parametric oscillator simulator
+- Implements Split-Step Fourier Method for solving coupled-wave equations
+- Uses CUFFT library for GPU-accelerated FFT
 
-**Step 3 — Pick server(s):**
-1. **For large sweeps (>100 points): split across multiple idle servers** to maximize throughput. E.g., split 400 points into 200+200 on landsman5 and landsman4, each in its own tmux session writing to the same `/data/rzhao/results/` folder. Combine results after both finish.
-2. If single-server is sufficient → landsman5 for large jobs, landsman4 for mid-size, landsman2/3 for smaller jobs
-3. If none idle → least loaded, with reduced `-j` workers
-4. If all heavily loaded or unreachable → ask the user
-
-**Step 4 — Record decision** in the catalogue entry's `Server selection` field (see template below).
-
-**Important — shared NFS**: `/data/rzhao/` is mounted on every landsman server. All repos, scripts, and results MUST live there (under `/data/rzhao/repos/` and `/data/rzhao/results/`). This is what enables multi-server parallelism — any server can read/write the same files. Never use `/home/US8J4928/`.
-
-### Simulation Catalogue (MANDATORY)
-**Every project has a `catalogue/` directory with weekly log files. You MUST update it for every simulation run.**
-
-This is critical for session recovery — if the computer reboots or the session crashes, the next agent reads the catalogue to know exactly what was running and how to check on it.
-
-**File structure:**
+**Compile and run:**
+```bash
+cd repos/cuOPO/src
+chmod +x cuOPO.sh
+./cuOPO.sh
 ```
-~/projects/<project>/catalogue/
-├── 2026-W12.md    # Week of 2026-03-16 (Mon) to 2026-03-22 (Sun)
-├── 2026-W11.md    # Week of 2026-03-09 to 2026-03-15
-└── ...
+
+**Compilation pattern:**
+```bash
+nvcc cuOPO.cu -D<REGIME> -D<CRYSTAL> [-DTHREE_EQS] --gpu-architecture=sm_XX -lcufftw -lcufft -o cuOPO
 ```
-- **Filename**: `YYYY-WNN.md` where NN is the ISO week number (Monday-start)
-- Create the file if it doesn't exist when logging a new run
+- `<REGIME>`: `CW_OPO` or `NS_OPO`
+- `<CRYSTAL>`: MgO:PPLN or MgO:sPPLT
+- `sm_XX`: GPU architecture (sm_60 for Pascal, sm_75 for Turing)
 
-**On session start:**
-1. Read the **current week's** catalogue file (and previous week's if today is Mon/Tue)
-2. Check status of any `🟡 RUNNING` entries — report to user before proceeding
-3. **Offer**: "Need context from earlier weeks? I can check `catalogue/` for older logs."
+### CUDA Projects (repos/cuda_projects)
+- Basic CUDA examples including vector addition and matrix multiplication
+- Used for learning and testing CUDA programming concepts
 
-**BEFORE launching a simulation:**
-Append a new entry to the current week's file with ALL of these fields:
-- **Run ID**: sequential within the week (e.g., `### W12-01. <descriptive name>`)
-- **Status**: `🟡 RUNNING` / `✅ COMPLETED` / `❌ FAILED` / `⏸️ PENDING`
-- **Launched**: timestamp (YYYY-MM-DD HH:MM)
-- **Server**: which machine (landsman2, landsman3, landsman5, CCC, timtam, etc.)
-- **Server selection**: load probe results and rationale (e.g., "Checked landsman2 (load 18.3/28, busy), landsman3 (load 0.2/28, idle). Picked landsman3 — idle.")
-- **tmux session**: session name (e.g., `tmux attach -t sim_name`)
-- **Server dir**: full path to results on the remote server
-- **Log file**: full path to the log file for monitoring (`tail -f ...`)
-- **Script**: what script was run and with what key arguments
-- **Config/Parameters**: key simulation parameters (brief)
-- **Purpose**: one-line description of what this run is investigating
-- **How to check**: exact command to check status (e.g., `ssh -T server "tail -5 /path/to/log"`)
-- **Expected duration**: rough estimate if known
-- **Local copy**: where results will be scp'd to (leave blank until done)
+## System Configuration
 
-**AFTER a simulation completes (or fails):**
-1. Update the status field (`🟡 RUNNING` → `✅ COMPLETED` or `❌ FAILED`)
-2. Add **Results summary**: key findings, output file paths
-3. Add **Local copy**: path after scp'ing results locally
+**Conda environments:**
+- `base`: Default environment with miniconda3
+- `ocr`: OCR processing environment
+- `qubits`: Quantum computing simulations
+- `tensor`: Tensor operations and deep learning
 
-**Template:** (fill all fields from the list above)
-```markdown
-### W12-01. <descriptive name>
-- **Status**: 🟡 RUNNING
-- **Launched**: YYYY-MM-DD HH:MM
-- **Server**: landsmanN
-- **Server selection**: <load probe results and rationale>
-- **tmux session**: `session_name` → `ssh -T landsmanN "tmux attach -t session_name"`
-- **Server dir**: `/data/rzhao/results/YYYYMMDD_HHMM_landsmanN_<name>/`
-- **Log file**: `ssh -T landsmanN "tail -20 /data/rzhao/results/.../<name>.log"`
-- **Script**: `python -u <script> <args>`
-- **Config**: <key parameters, brief>
-- **Purpose**: <one line>
-- **How to check**: `ssh -T landsmanN "tail -5 /data/rzhao/results/.../<name>.log"`
-- **Expected duration**: <estimate>
-- **Local copy**: _(pending)_
+**Activate environment:**
+```bash
+conda activate <env_name>
 ```
+
+**GPU Information:**
+- CUDA toolkit installed (check version with `nvcc --version`)
+- Typical GPU architectures: Pascal (sm_60), Turing (sm_75)
+
+## Development Tools
+
+**Spack Package Manager:**
+- Located at `~/spack/`
+- Used for installing scientific computing packages
+- Palace can be installed via: `spack install palace`
+
+**Common Commands:**
+```bash
+# Check GPU status
+nvidia-smi
+
+# CUDA compilation
+nvcc -o output_file source.cu --gpu-architecture=sm_XX
+
+# CMake project build
+cmake -B build -S .
+cmake --build build -j$(nproc)
+```
+
+### Local LLM (Ollama + llama-batch)
+- Llama 3.1 8B Q4 running locally via Ollama on RTX 3060 Ti
+- Ollama API at `http://localhost:11434`
+- Use `llama-batch` CLI tool for bulk/batch processing tasks
+
+**llama-batch usage:**
+```bash
+# Single prompt
+echo '{"prompt": "Summarize: ..."}' | llama-batch
+
+# Batch of prompts with system prompt
+echo '[
+  {"id": "1", "system": "You are a classifier.", "prompt": "Classify: ..."},
+  {"id": "2", "system": "You are a classifier.", "prompt": "Classify: ..."}
+]' | llama-batch --concurrency 4 --temperature 0.2
+```
+
+**Options:**
+- `--model`: Model name (default: `llama3.1:8b-instruct-q4_K_M`)
+- `--concurrency`: Parallel requests (default: 2, recommend 2-4 for GPU)
+- `--temperature`: Sampling temperature (default: 0.1)
+
+**Best for:** summarization, classification, tagging, extraction, translation, simple Q&A, reformatting — any simple but high-volume task that can be offloaded from Claude API.
+
+**Output:** JSON with `total_tasks`, `completed`, `failed`, `elapsed_seconds`, and `results` array.
+
+## Architecture Notes
+
+**Palace Project Structure:**
+- Uses superbuild pattern with external dependencies in `extern/`
+- Configuration files in JSON format located in `examples/`
+- Supports multiple mesh formats and parallel execution via MPI
+- Testing framework under `test/unit/`
+
+**CUDA Development:**
+- Check GPU architecture before compiling (use `nvidia-smi` or CUDA samples)
+- CUFFT library required for Fourier transforms on GPU
+- Compilation requires proper sm_XX flag matching GPU architecture
+
+## Working with Projects
+
+**When modifying Palace:**
+- C++17 required, ensure compiler compatibility
+- CMake version 3.21 or later required
+- Run tests from build directory: `ctest`
+- Documentation uses Julia-based build system
+
+**When modifying cuOPO:**
+- Preprocessor flags control simulation regime and crystal type
+- Output files are .dat format with separate real/imaginary parts
+- Verify GPU architecture flag matches hardware before compilation
+
+**General Guidelines:**
+- Most scientific computing projects use conda environments - activate appropriate environment before development
+- GPU code requires CUDA drivers and toolkit properly installed
+- Many projects use CMake - prefer out-of-source builds in `build/` directories
+
+
+## Domain Reasoning: Qubit/Coupler/Readout
+
+Full prompt at: `~/openclaw-skills/quantum-reasoning/QUBIT_COUPLER_READOUT.md`
+Key rules: never truncate transmon to 2 levels without justification; check dispersive limits before using chi formula; verify Purcell protection; check frequency collisions first for multi-qubit failures.
+
+
+## Domain Reasoning: TWPA
+
+Full prompt at: `~/openclaw-skills/quantum-reasoning/TWPA.md`
+Key rules: gain ripple is almost never intrinsic to JJTL (check Fabry-Perot first); never confuse gain with quantum efficiency; use match_papers_array RPC (NOT match_papers); harmonic balance for steady-state, time-domain for transients; 2D pump sweep is the most diagnostic measurement.
+
+
+## Notion Knowledge Base Index
+
+Query `notion_pages` in Supabase before searching Notion directly.
+
+
+### Analysis
+- Bifurcation Analysis — HD3C Spur Onset Characterization -- [PARKED — not pursuing further. Coordinate transform resolve
+- Campaign 14 Plan — JoSIM-as-SA: HD3C Spur Replication & Spatiotemporal Study -- Detailed execution plan for Campaign 14: replicate HD3C expe
+- Coordinate Transform Resolves Bifurcation Exponent — Spur Onset Is Supercritical Parametric Oscillation -- [PARKED — resolved. β≈1.37 was coordinate artifact; true exp
+- Experiment Proposal — MI Gain Profile Direct Measurement -- Proposed experiment to directly measure the MI gain profile 
+- Experiment Proposal — Pump Depletion by MI (Energy Accounting) -- Proposed experiment to quantify pump power extracted by MI s
+- Extended Spur-Threshold Ideas — Beyond the Original Five -- Extended ideas for spur suppression beyond original 5 approa
+- Harbord Diplexer Port Mapping & Absorptive BPF Derivation -- Corrected port mapping for Harbord DPX S4P. Port 1=signal, 2
+- Implementation Spec — IFFT Quantum Noise Source for SPICE Injection -- [SUPERSEDED — QNoise injection found unnecessary for spur re
+- Implementation Spec — Multi-Tone Gain Measurement & Spur-Threshold-Gain Metric -- Spec for 21-tone CW gain measurement and spur-threshold-gain
+- JTWPA Simulation Campaign — W12 Summary & Business Impact -- ~55 catalogue entries, ~500+ JoSIM/HB runs across 4 servers.
+- JTWPA Spur Mechanism — Complete Picture (Campaign 14 Findings) -- Complete spur mechanism: parametric oscillation in Fabry-Per
+- JTWPA Spur Simulation with Wirebond Reflections — JoSIM Campaign Results (200 to 1956 cells) -- JoSIM spur simulation at realistic cell count. Spurs emerge 
+- Phase Matching & Cavity-Mode Spur Prediction Model — HD3C Analysis -- Analytical model for predicting discrete JTWPA spur frequenc
+- Research North Star — TWPA Gain Limit & MI Suppression -- Primary research question: what limits TWPA gain? Current an
+- Spur Bidirectionality — Traveling-Wave MI vs Fabry-Perot Resolution -- Investigation of whether JTWPA MI spurs require bidirectiona
+- Spur Frequency Prediction — Challenges & Current Status (2026-03-30) -- [MERGED into "Phase Matching & Cavity-Mode Spur Prediction M
+- Spur Origin Diagnostics — Campaign 8 Results (Sweeps 1–3) -- [SUPERSEDED by Campaign 14 — see "JTWPA Spur Mechanism — Com
+- TWPA Chaos Detection via WRspice — Simulation Strategy & Literature Analysis -- Analysis of Guarcello 2024 chaos paper (DARTWARS). Simulatio
+- TWPA Noise Characterization -- Device wiring and noise temperature characterization data fr
+- TWPA Spur Mechanism Analysis — Modulation Instability & Mitigation Strategies -- [SUPERSEDED by Campaign 14 — see "JTWPA Spur Mechanism — Com
+- Why VNA-Grade S21 from JoSIM Is Impractical — Lessons Learned -- [DECISION RECORD — VNA-grade S21 from JoSIM abandoned] VNA-g
+- Wideband S21 Extraction from JoSIM — Analysis & Plan -- [ABANDONED PATH — kept to avoid retreading] Why Gaussian pul
+
+### Diary
+- Diary — 2026-03-17 — MI Spur Confirmation & Gaussian Pulse Method -- First JoSIM confirmation of MI as the spur generation mechan
+- Diary — 2026-03-18 — HB RPM Sweep & Campaign 7 Scripts -- Harmonic balance RPM frequency sweep results for Campaign 7.
+- Diary — 2026-03-18 — Spur Diagnostics & Loss Model Discovery -- Spur diagnostics sweeps. Discovery: Debye loss model causes 
+- Diary — 2026-03-20 — Gain Discrepancy Root Causes & Ic Monte Carlo -- Resolved HB-vs-JoSIM gain gap: ip/2 convention (+6dB), Debye
+- Diary — 2026-03-21 — Best-Match 16.3 dB & MI Spatial Profiles -- Compiled overnight results: Ic Monte Carlo, Debye models, Cc
+- Diary — 2026-03-21 — Cosim Framework & DPX Analysis -- Implemented wave-domain co-simulation package (twpa-cosim). 
+- Diary — 2026-03-22 — Embedded DPX & Cascaded TWPA -- Building DPX-TWPA1-DPX-TWPA2-BPF netlist. Embedded DPX simul
+- Diary — 2026-03-22 — Spur = Superfluorescence Discovery -- Diary entry documenting the insight that MI spur emission an
+- Diary — 2026-03-24 — Cosim Blockers & Pivot to TWPA-Only -- All cosim approaches hit fundamental blockers (Y-param DC si
+- Diary — 2026-03-25 — MI Gain Race, Spur Classification & Phase 10D -- JoSIM V3 gain profile. MI gain race analysis. Spur classific
+- Diary — 2026-03-25 — Signal Injection Bug & PWL Decimation Fix -- Fixed signal injection measurement artifact (different Vin l
+- Diary — 2026-03-26 — No Activity -- No research activity recorded on 2026-03-26. Minor note on d
+- Diary — 2026-03-26 — Overnight TWA SPDC Completions & Stalled V3 Sweeps -- Distributed TWA vacuum noise does NOT change MI behavior. Ov
+- Diary — 2026-03-27 — Lock-in Validation & Wideband S21 Launch -- Lock-in extraction validated (matches FFT within 0.5 dB). Pa
+- Diary — 2026-03-28 — R0 Spur Control & Diagonal Sweet Spot -- Proved R0 is sole RCSJ spur control (RN zero effect). Diagon
+- Diary — 2026-03-30 — TWPA Spur Prediction Model Development -- Major session building spur prediction model. ABCD cavity mo
+- Diary — 2026-04-05 — No Activity -- No research activity recorded on 2026-04-05. Placeholder dia
+- Diary — Why Input-Only Noise Already Produces Spurs & TWA Implementation Plan -- Analysis and diary entry explaining why deterministic spurs 
+
+### Literature
+- Literature Survey — Phase Matching & MI Spur Frequency Prediction in JTWPAs -- Comprehensive survey of analytical (ABCD+CME, NLSE MI formul
+- Literature Survey — TWPA S21 Extraction Methods in Time-Domain Simulation -- Surveyed 15+ JTWPA papers (all deterministic, no noise injec
+
+### Procedure
+- Claude Code CLAUDE.md Setup — New Machine -- Step-by-step procedure to set up the CLAUDE.md directory str
+- Context Engine — Implementation Plan (Supabase + Notion + Obsidian) -- Implementation plan for automatic context injection into Cla
+- Context Engine Setup — IBM Laptop -- Step-by-step setup for context engine on IBM laptop. Clone f
+- Cooldown Folder Setup — fridge36B (timtam) -- Procedure to set up a new cooldown measurement folder on tim
+- Cooldown Folder Setup (fridge36B) -- [DUPLICATE — see "Measurement Folder Setup — fridge36B"] Pro
+
+### Reference
+- JoSIM SA Frequency Resolution — What Controls It and How to Improve -- df = 1/T where T = tstop - t_skip. Default 2.5 MHz (12× coar
+- JTWPA JoSIM Simulation Pipeline — Workflow Reference -- Complete JoSIM simulation workflow: netlist generation, runn
+- Marika — Home Server (Pop!_OS) -- Home server specs (32 vCPU, 124 GiB RAM, RTX 3060 Ti). Used 
+- Physics Context: Superconducting Qubit & DTC Simulation Reference -- Reference covering superconducting qubit physics relevant to
+- Quantum Engineering Knowledge Base -- Top-level Notion workspace for quantum engineering research.
+- TWPA Harmonic Balance Simulator -- Julia harmonic balance simulator using JosephsonCircuits.jl 
+- TWPA Noise Analysis & Tools Reference -- Reference index for TWPA noise characterization tooling: noi
+- TWPA Noise Measurement Package -- Automated noise temperature measurement system for TWPA devi
+- TWPA Simulation Diary -- Parent folder indexing all TWPA simulation diary entries fro
+
+### Tools
+- llama-batch: Local LLM Batch Processor -- CLI tool at ~/.local/bin/llama-batch for offloading simple h
+- OpenClaw: Server Operations Assistant Setup (marika) -- Operational guide for OpenClaw 24/7 server assistant on mari
+
+
+## Obsidian Vault
+
+Local vault at `/home/ruichenzhao/obsidian-vault`. Read files directly with Read tool.
+
+- `research/` (128 notes)
+
+
+## Context Engine
+
+A SessionStart hook automatically injects active research state from Supabase at session start.
+This includes: open investigations, running simulations, recent diary findings, key results, and parking lot items.
+
+**Do NOT** manually query for this information at session start -- it is already injected.
+
+To refresh context mid-session: query Supabase tables directly (investigation_nodes, simulation_runs, diary_entries, parking_lot).
+
+Supabase project: `fqdmbvdaxjslgoqgclip`
+Literature search: use `match_papers_array` RPC (NOT `match_papers`)
+
+
+## Reference Library Protocol
+
+**Before making technical claims** about microwave engineering, qubit physics, circuit QED, noise theory, or superconductivity, search the reference library:
+
+```sql
+SELECT * FROM search_all_references('your topic here', 5);
+-- Searches across 25 textbooks (Pozar, Steer, Clerk, Girvin, Blais, etc.)
+-- and 2000+ arXiv papers with full text
+```
+
+For book-specific lookup: `SELECT * FROM search_book_chunks('topic', 5, 'pozar_microwave_4ed');`
+For design rules: `SELECT * FROM design_rules WHERE domain = 'twpa' OR rule ILIKE '%keyword%';`
+
+**Cite sources** when using results: (Pozar §2.4 p.63, Clerk §V.B, arXiv:2003.00024).
+**Flag contradictions** — if your answer contradicts a reference, say so explicitly.
+
+### Challenge Protocol (use when reaching conclusions)
+
+When you or the user reach a technical conclusion, **actively search for contradicting evidence** before accepting it:
+
+1. Search for the opposite claim: `SELECT * FROM search_all_references('NOT <your_conclusion> OR alternative', 5);`
+2. Search for boundary conditions where it breaks: `SELECT * FROM search_all_references('<your_conclusion> limit failure breakdown', 5);`
+3. Check if any belief contradicts: `SELECT * FROM beliefs WHERE statement ILIKE '%keyword%' AND status = 'active';`
+4. If contradiction found → present both sides and assess which evidence is stronger.
+
+### Cross-Domain Innovation Patterns
+
+When stuck on a problem, **force cross-domain search** to find transferable solutions:
+
+- **Method transfer**: Search how a different subfield solves a structurally similar problem
+  `SELECT * FROM search_all_references('<technique from another domain>', 5);`
+- **Analogy bridge**: Map concepts between domains (e.g., "Purcell filter" ↔ "reflectionless filter for TWPA")
+- **Constraint inversion**: If a parameter is treated as fixed, search for papers that tune it
+
+Key cross-domain bridges for current work:
+- Microwave filter design (Pozar Ch.8, Steer) ↔ TWPA spur suppression
+- TLS physics (Martinis, Klimov) ↔ TWPA junction loss mechanisms
+- Fluxonium disjoint support ↔ TWPA mode isolation
+- Parametric amplifier theory (Clerk) ↔ TWPA gain/noise optimization
+- Tunable coupler ZZ suppression ↔ TWPA inter-mode coupling
+
 
 ---
-
-## Diary (Daily Summary)
-
-**At the end of every session** (or when the user says "done for today"), write a diary entry to **Notion**:
-
-- **Where**: Create a page in the Notion workspace, titled `Diary — YYYY-MM-DD — <project>`
-- **If multiple sessions in one day**, update the existing day's page (append, don't overwrite)
-- **Content**:
-  - **Tasks Completed** — brief description of each task done today
-  - **Key Conclusions / Findings** — what was learned, decided, or confirmed
-  - **Simulation & Data Links** — paths to `sim_outputs/` folders, key files created/modified, with brief descriptions of what each contains
-  - **Next Steps** — what remains to be done or follow-up items
-- **Proactively offer** to write the diary if the session involved meaningful work (simulations, analysis, debugging) — don't wait to be asked
-- Keep entries concise but complete enough to reconstruct context in a future session
-
----
-
-## Plot Styling
-
-All plots: **bold black borders** (both Matplotlib and Plotly). See `~/.claude/docs/plot_styling.md` for code snippets.
+*CLAUDE.md auto-generated: 2026-04-09 04:47*
