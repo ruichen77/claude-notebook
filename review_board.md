@@ -97,6 +97,28 @@ If you catch yourself launching a sim without a corresponding row in `simulation
 
 **Exemption:** one-off smoke tests for Rule A (reasoning rule `--smoke`) that run < 5 min wall time don't need a card. Everything larger does.
 
+### R7 — Every card MUST have a plot HTML link before `needs_review`
+
+Before a card transitions from `in_flight` → `needs_review`, its `result_files` jsonb must contain at least one plot HTML link. "Needs review" means "there's something to *look at*", not just "there are numbers in a JSON somewhere". A card without a plot is not reviewable.
+
+**What counts as a plot link:** any key in `result_files` that:
+- equals `plot_html`, OR
+- ends in `_plot`, `_plot_html`, `_html`, or `.html`, OR
+- has a value starting with `file://` and ending in `.html`
+
+Examples of compliant keys: `plot_html`, `overlay_plot_html`, `avg_gain_vs_pp_plot`, `ripple_histogram_html`, `gain_map_plot`.
+
+**Preferred key naming:**
+- Primary / most important plot → `plot_html`
+- Secondary named plots → `<topic>_plot` (e.g. `avg_gain_vs_pp_plot`, `overlay_plot_html`, `ripple_plot`)
+- Always use `file://...` prefix on local paths (clickable in terminals that support it)
+
+**Exemption:** pure diagnostic cards that genuinely have no meaningful gain data to visualize (e.g. a framework smoke test, a CM-only sanity check, a netlist generation test) should skip `needs_review` entirely and go straight to `archived` or stay in `in_flight` until retired. Don't manufacture a placeholder plot just to satisfy R7.
+
+**Why:** the SessionStart hook and diary auto-generator both inject `key_finding` + `result_summary` + `result_files` into context. If `result_files` lacks a plot, the "finding" is text-only and the shape of the data is never actually reviewed — which is how we end up presenting headline numbers built on uninspected data (the exact W14-47 / Phase 10C failure mode this whole rule set is guarding against). Plot-first culture forces the simulator to produce a visual artifact that can be reviewed in one click before any conclusions are drawn.
+
+**Enforcement:** `crucible.board.update_card()` detects when `board_status='needs_review'` is being set AND the card's `result_files` has no plot link, and logs a loud R7 violation warning. The warning is non-blocking (the update still happens) because forcing blocking behavior would break cards that are legitimately in the diagnostic exemption above. Silencing the warning requires either adding a plot or routing the card to `archived` instead.
+
 ## Cheat sheet — one-liners
 
 ```sql
