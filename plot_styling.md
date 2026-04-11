@@ -25,8 +25,39 @@ DARK_PALETTE = ['#ff453a', '#ffd60a', '#32d74b', '#0a84ff', '#bf5af2',
 
 Red / yellow / green / blue / purple / cyan / orange / pink / mint / indigo / amber / tan. These pop against `#0a0a0a` and remain distinguishable when the plot is downsized for slides.
 
+## ⚠️ Plotly CDN pinning — CRITICAL
+
+**NEVER use `https://cdn.plot.ly/plotly-latest.min.js`.** That alias is **frozen at v1.58.5** (since ~2020) for legacy back-compat. It will silently accept and ignore every post-2021 Plotly feature, including:
+
+- `layout.legend.groupclick` (per-trace toggling inside a `legendgroup`) — added in v2.4
+- `layout.legend.legendgrouptitle` — added in v2.4
+- `layout.legend.itemsizing="constant"`, `itemwidth` — some options added in v2.x
+- Modern colorway / axis / annotation options
+- `Plotly.react()` performance improvements
+- WebGL 2 backend
+
+**Always pin to a specific recent v2 version:**
+
+```html
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+```
+
+(Pick the latest stable v2 as of when you're writing the plot. v2.35.2 is known-good.)
+
+**How this bit us**: W14-47c overlay plot — I set `legend.groupclick = "toggleitem"` to enable per-pump-power selection in a crowded legend. With `plotly-latest.min.js` the feature silently no-op'd because v1.58.5 doesn't have it. Took two round-trips to diagnose. Fix was a one-line URL change.
+
+**Check first**: if a Plotly layout feature isn't working as documented, the first thing to check is whether the loaded version supports it — grep the generated HTML for `plotly-<VERSION>.min.js` and compare against the Plotly.js changelog.
+
+---
+
 ## Plotly snippet (copy-paste)
 
+**HTML wrapper** (always use this as the CDN include):
+```html
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+```
+
+**Layout block:**
 ```python
 DARK = dict(
     paper_bgcolor='#0a0a0a', plot_bgcolor='#0a0a0a',
