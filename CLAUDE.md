@@ -143,6 +143,17 @@ echo '[
 - Many projects use CMake - prefer out-of-source builds in `build/` directories
 
 
+## Circuit Diagram Quality Rules
+
+When producing any circuit schematic (CircuiTikZ, TikZ, matplotlib, sketch):
+read `.claude/circuit_diagram_style.md` first. Canonical generator:
+`crucible/src/crucible/viz/circuit.py`. Ten rules cover: drawing-must-match-netlist,
+explicit lead wires on every node, leads into/out of block elements, representative
+period for repeating chains, vertical stacking to avoid label collisions,
+breathing room, page sizing, footnotes for non-obvious conventions, font
+hierarchy, and always re-rendering to inspect visually.
+
+
 ## Domain Reasoning: Qubit/Coupler/Readout
 
 Full prompt at: `~/openclaw-skills/quantum-reasoning/QUBIT_COUPLER_READOUT.md`
