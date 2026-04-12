@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/ruichenzhao/context-engine/box_db/.venv/bin/python /Users/ruichenzhao/context-engine/box_db/hook_status.py twpa",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/ruichenzhao/context-engine/box_db/.venv/bin/python /Users/ruichenzhao/context-engine/box_db/hook_status.py twpa",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
