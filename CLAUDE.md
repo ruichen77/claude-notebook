@@ -143,6 +143,18 @@ echo '[
 - Many projects use CMake - prefer out-of-source builds in `build/` directories
 
 
+## Slide / PPTX Quality Rules
+
+When creating or modifying any PPTX slide, use the slide toolkit at `.claude/slide_tools.py`.
+Full rules in memory file `feedback_slide_layout.md`. Key workflow:
+
+1. Generate figures with projection-readable fonts (matplotlib ≥14pt labels, Plotly ≥20 main font).
+2. Assemble using `SlideLayout` templates from `slide_tools.py` — no ad-hoc coordinate math.
+3. **Validate**: `python3 .claude/slide_tools.py validate PPTX_PATH SLIDE_NUM` — fix ALL issues.
+4. **Preview**: `python3 .claude/slide_tools.py preview PPTX_PATH SLIDE_NUM` — inspect PNG with Read tool.
+5. Fix any visual issues. THEN present to user. Never skip steps 3-4.
+
+
 ## Circuit Diagram Quality Rules
 
 When producing any circuit schematic (CircuiTikZ, TikZ, matplotlib, sketch):
