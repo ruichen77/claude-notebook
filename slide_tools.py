@@ -162,14 +162,29 @@ def validate_slide(pptx_path, slide_num):
         if b > sh + 0.1:
             issues.append(f'OVERFLOW: {shape.name} bottom ({b:.2f}") exceeds slide height ({sh:.2f}")')
 
-        # Check 2: text font sizes (for PPTX textboxes)
+        # Check 2: text font sizes and contrast (for PPTX textboxes)
         if is_text:
             for para in shape.text_frame.paragraphs:
                 for run in para.runs:
+                    if not run.text.strip():
+                        continue
                     if run.font.size:
                         pts = run.font.size / 12700  # EMU to pt
                         if pts < 9:
                             issues.append(f'TINY TEXT: {shape.name} has {pts:.0f}pt text ("{run.text[:30]}") — min 9pt')
+                    # Check contrast: dark/unset text on dark background is invisible
+                    try:
+                        rgb = run.font.color.rgb
+                    except AttributeError:
+                        rgb = None
+                    if rgb is None:
+                        issues.append(
+                            f'INVISIBLE TEXT: {shape.name} has inherited/unset color '
+                            f'("{run.text[:40]}") — will be black on dark bg. Set explicitly.')
+                    elif rgb[0] < 0x30 and rgb[1] < 0x30 and rgb[2] < 0x30:
+                        issues.append(
+                            f'INVISIBLE TEXT: {shape.name} has near-black color #{rgb} '
+                            f'("{run.text[:40]}") — invisible on dark bg.')
 
     # Check 3: pairwise overlap between pictures and text
     for i, a in enumerate(shapes_info):
