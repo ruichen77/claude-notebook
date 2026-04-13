@@ -184,6 +184,9 @@ def validate_slide(pptx_path, slide_num):
                 ox = min(ar, br) - max(al, bl)
                 oy = min(ab, bb) - max(at, bt)
                 area = ox * oy
+                # Skip tiny text-text overlaps (intentional bullet stacking)
+                if not (a['is_pic'] or b_info['is_pic']) and area < 0.15:
+                    continue
                 if area > 0.05:  # significant overlap (>0.05 sq in)
                     issues.append(
                         f'OVERLAP: {a["name"]} and {b_info["name"]} overlap by {ox:.2f}"×{oy:.2f}" '
