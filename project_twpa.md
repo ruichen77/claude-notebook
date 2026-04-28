@@ -2,6 +2,20 @@
 
 Traveling Wave Parametric Amplifier noise characterization and analysis.
 
+## ⚠️ Measurement Pre-Launch Checklist — ALWAYS FOLLOW
+
+**Before launching ANY `record_trace.py` campaign > 30 min on fridge36B, walk through the 7-item checklist in the auto-memory:** `feedback_measurement_pre_launch_checklist.md`.
+
+The three recurring traps that have cost ~12 hr of cryostat time across sessions:
+
+1. **Switch routing** — wrapper inherits stale `set_switches AB1` from a copied template instead of the device's actual relay (e.g. D3 needs `AB4`). Result: signal goes to the wrong DUT, looks like everything's working. Always read `relay: [N]` from `benchmark/exp_params.yaml` per device.
+2. **MC-PUMP routing** — wrapper sets the chain switches but forgets `set_switches PUMP04_to_P4` (or per-device variant). PUMP04 is on but routes to whatever the previous campaign left the mux at. Always set both signal AND pump-mux per device.
+3. **Thru subtraction missing in build** — `screening_thru_cal_*.csa` cal plane is upstream of the device. Raw S21 reads ~2× the true device gain (residual ~18 dB HEMT chain). `gain_map/fine_process.py` subtracts thru post-hoc; new build scripts that read raw CSVs forget this. Sanity check: heatmap peak should be 0–25 dB, NEVER ≥ 30 dB on a healthy TWPA.
+
+**The 30-second smoke test at peak op-point (compare device gain vs gain_map ±3 dB after thru-subtract) catches all three.** Don't skip it. Global Rule A applies to measurements as well as sims.
+
+
+
 ## Code Repos (on servers)
 
 - **Noise measurement**: `timtam:/nas-data0/systems/fridge36B/Ruichen_library/twpa_noise_measurement/`
